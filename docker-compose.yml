@@ -1,0 +1,43 @@
+services:
+
+  mysql:
+
+    image: mysql:8.4
+
+    container_name: wms-mysql
+
+    restart: always
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: warehouse_management
+
+    ports:
+      - "3307:3306"
+
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  app:
+
+    build: .
+
+    container_name: warehouse-management
+
+    depends_on:
+      - mysql
+
+    ports:
+      - "8080:8080"
+
+    environment:
+
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/warehouse_management
+
+      SPRING_DATASOURCE_USERNAME: root
+
+      SPRING_DATASOURCE_PASSWORD: root
+
+volumes:
+
+  mysql-data:
