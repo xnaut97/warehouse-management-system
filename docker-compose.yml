@@ -19,24 +19,17 @@ services:
       - mysql-data:/var/lib/mysql
 
   app:
-
     build: .
 
     container_name: warehouse-management
-
-    depends_on:
-      - mysql
 
     ports:
       - "8080:8080"
 
     environment:
-
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/warehouse_management
-
-      SPRING_DATASOURCE_USERNAME: root
-
-      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
 
 volumes:
 
