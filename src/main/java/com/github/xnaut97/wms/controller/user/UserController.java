@@ -8,6 +8,8 @@ import com.github.xnaut97.wms.dto.user.UserResponse;
 import com.github.xnaut97.wms.service.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,11 +24,13 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<List<UserResponse>> getAllUsers() {
+    public ApiResponse<Page<UserResponse>> getAllUsers(
+            Pageable pageable
+    ) {
 
         return ApiResponse.success(
                 "Users retrieved successfully",
-                userService.getAllUsers()
+                userService.getAllUsers(pageable)
         );
 
     }

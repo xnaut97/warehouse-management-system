@@ -3,6 +3,8 @@ package com.github.xnaut97.wms.repository.report;
 import com.github.xnaut97.wms.dto.report.inventory.InventoryHistoryResponse;
 import com.github.xnaut97.wms.dto.report.inventory.InventoryReportResponse;
 import com.github.xnaut97.wms.entity.inventory.Inventory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -33,7 +35,7 @@ public interface InventoryReportRepository
         FROM Inventory i
         ORDER BY i.material.code
         """)
-    List<InventoryReportResponse> getRawMaterialInventory();
+    Page<InventoryReportResponse> getRawMaterialInventory(Pageable pageable);
 
     @Query("""
         SELECT new com.github.xnaut97.wms.dto.report.inventory.InventoryHistoryResponse(
@@ -54,10 +56,11 @@ public interface InventoryReportRepository
             (:to IS NULL OR t.createdAt <= :to)
         ORDER BY t.createdAt DESC
         """)
-    List<InventoryHistoryResponse> getHistory(
+    Page<InventoryHistoryResponse> getHistory(
             @Param("warehouseId") Long warehouseId,
             @Param("from") LocalDateTime from,
-            @Param("to") LocalDateTime to
+            @Param("to") LocalDateTime to,
+            Pageable pageable
     );
 
 }

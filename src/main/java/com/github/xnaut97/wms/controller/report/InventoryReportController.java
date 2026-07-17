@@ -5,6 +5,8 @@ import com.github.xnaut97.wms.dto.report.inventory.InventoryHistoryResponse;
 import com.github.xnaut97.wms.dto.report.inventory.InventoryReportResponse;
 import com.github.xnaut97.wms.service.report.InventoryReportService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,13 +32,15 @@ public class InventoryReportController {
             'EXECUTIVE_BOARD'
             )
             """)
-    public ApiResponse<List<InventoryReportResponse>> rawMaterialInventoryReport() {
+    public ApiResponse<Page<InventoryReportResponse>> rawMaterialInventoryReport(
+            Pageable pageable
+    ) {
 
         return ApiResponse.success(
 
                 "Inventory report retrieved successfully",
 
-                service.getRawMaterialInventoryReport()
+                service.getRawMaterialInventoryReport(pageable)
 
         );
 
@@ -50,7 +54,7 @@ public class InventoryReportController {
             'EXECUTIVE_BOARD'
             )
             """)
-    public ApiResponse<List<InventoryHistoryResponse>> inventoryHistoryReport(
+    public ApiResponse<Page<InventoryHistoryResponse>> inventoryHistoryReport(
 
             @RequestParam(required = false)
             Long warehouseId,
@@ -65,7 +69,9 @@ public class InventoryReportController {
             @DateTimeFormat(
                     iso = DateTimeFormat.ISO.DATE
             )
-            LocalDate toDate
+            LocalDate toDate,
+
+            Pageable pageable
 
     ) {
 
@@ -79,7 +85,9 @@ public class InventoryReportController {
 
                         fromDate,
 
-                        toDate
+                        toDate,
+
+                        pageable
 
                 )
 

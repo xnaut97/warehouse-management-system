@@ -2,6 +2,9 @@ package com.github.xnaut97.wms.service.user;
 
 import com.github.xnaut97.wms.dto.auth.LoginRequest;
 import com.github.xnaut97.wms.dto.auth.LoginResponse;
+import com.github.xnaut97.wms.dto.user.UserResponse;
+import com.github.xnaut97.wms.entity.user.User;
+import com.github.xnaut97.wms.enums.RoleType;
 import com.github.xnaut97.wms.exception.BusinessException;
 import com.github.xnaut97.wms.security.CustomUserDetails;
 import com.github.xnaut97.wms.security.JwtService;
@@ -30,13 +33,24 @@ public class AuthService {
                 )
         );
 
-        CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
-        if(user == null)
+        CustomUserDetails details = (CustomUserDetails) authentication.getPrincipal();
+        if(details == null)
             throw new BusinessException("User not found");
 
-        String token = jwtService.generateToken(user.getUsername());
+        User user = details.getUser();
 
-        return new LoginResponse(token);
+        String token = jwtService.generateToken(details.getUsername());
+
+        UserResponse response = UserResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .role(user.getRole().getRole().name())
+                .enabled(user.getEnabled())
+                .build();
+
+        return new LoginResponse(token, response);
 
     }
 

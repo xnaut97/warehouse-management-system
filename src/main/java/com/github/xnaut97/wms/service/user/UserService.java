@@ -13,6 +13,8 @@ import com.github.xnaut97.wms.exception.BusinessException;
 import com.github.xnaut97.wms.repository.user.RoleRepository;
 import com.github.xnaut97.wms.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -34,6 +36,13 @@ public class UserService {
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+
+        return userRepository.findAll(pageable)
+                .map(this::mapToResponse);
+
     }
 
     public UserResponse getUserById(Long id) {

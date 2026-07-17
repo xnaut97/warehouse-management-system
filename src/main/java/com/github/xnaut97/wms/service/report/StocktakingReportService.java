@@ -5,6 +5,8 @@ import com.github.xnaut97.wms.dto.report.stocktaking.StocktakingSummaryReportRes
 import com.github.xnaut97.wms.dto.report.stocktaking.StocktakingVarianceReportResponse;
 import com.github.xnaut97.wms.repository.report.StocktakingReportRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,16 +19,20 @@ public class StocktakingReportService {
     private final StocktakingReportRepository repository;
 
     @Transactional
-    public List<StocktakingReportResponse> getStocktakingReport() {
+    public Page<StocktakingReportResponse> getStocktakingReport(
+            Pageable pageable
+    ) {
 
-        return repository.getStocktakingReport();
+        return repository.getStocktakingReport(pageable);
 
     }
 
     @Transactional
-    public List<StocktakingVarianceReportResponse> getVarianceReport() {
+    public Page<StocktakingVarianceReportResponse> getVarianceReport(
+            Pageable pageable
+    ) {
 
-        return repository.getVarianceReport();
+        return repository.getVarianceReport(pageable);
 
     }
 

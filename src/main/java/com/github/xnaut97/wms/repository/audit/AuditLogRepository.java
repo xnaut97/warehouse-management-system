@@ -3,6 +3,8 @@ package com.github.xnaut97.wms.repository.audit;
 import com.github.xnaut97.wms.dto.audit.AuditLogResponse;
 import com.github.xnaut97.wms.entity.audit.AuditLog;
 import com.github.xnaut97.wms.enums.AuditAction;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -53,7 +55,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
             
             ORDER BY a.createdAt DESC
             """)
-    List<AuditLogResponse> search(
+    Page<AuditLogResponse> search(
 
             @Param("username")
             String username,
@@ -65,7 +67,9 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
             LocalDateTime from,
 
             @Param("to")
-            LocalDateTime to
+            LocalDateTime to,
+
+            Pageable pageable
 
     );
 }

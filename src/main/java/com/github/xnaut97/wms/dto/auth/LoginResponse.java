@@ -1,5 +1,6 @@
 package com.github.xnaut97.wms.dto.auth;
 
+import com.github.xnaut97.wms.dto.user.UserResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -8,5 +9,7 @@ import lombok.Getter;
 public class LoginResponse {
 
     private String token;
+
+    private UserResponse user;
 
 }

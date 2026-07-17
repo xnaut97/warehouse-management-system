@@ -4,6 +4,8 @@ import com.github.xnaut97.wms.dto.report.stocktaking.StocktakingReportResponse;
 import com.github.xnaut97.wms.dto.report.stocktaking.StocktakingSummaryReportResponse;
 import com.github.xnaut97.wms.dto.report.stocktaking.StocktakingVarianceReportResponse;
 import com.github.xnaut97.wms.entity.stock.Stocktaking;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -30,7 +32,7 @@ public interface StocktakingReportRepository extends JpaRepository<Stocktaking, 
             
             ORDER BY s.stocktakingDate DESC
             """)
-    List<StocktakingReportResponse> getStocktakingReport();
+    Page<StocktakingReportResponse> getStocktakingReport(Pageable pageable);
 
     @Query("""
             SELECT new com.github.xnaut97.wms.dto.report.stocktaking.StocktakingVarianceReportResponse(
@@ -61,7 +63,7 @@ public interface StocktakingReportRepository extends JpaRepository<Stocktaking, 
             
             ORDER BY s.stocktakingDate DESC
             """)
-    List<StocktakingVarianceReportResponse> getVarianceReport();
+    Page<StocktakingVarianceReportResponse> getVarianceReport(Pageable pageable);
 
     @Query("""
             SELECT new com.github.xnaut97.wms.dto.report.stocktaking.StocktakingSummaryReportResponse(

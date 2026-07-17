@@ -5,6 +5,8 @@ import com.github.xnaut97.wms.dto.common.ApiResponse;
 import com.github.xnaut97.wms.enums.AuditAction;
 import com.github.xnaut97.wms.service.audit.AuditLogService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,7 +31,7 @@ public class AuditController {
             'EXECUTIVE_BOARD'
             )
             """)
-    public ApiResponse<List<AuditLogResponse>> getAuditLogs(
+    public ApiResponse<Page<AuditLogResponse>> getAuditLogs(
 
             @RequestParam(required = false)
             String username,
@@ -47,7 +49,9 @@ public class AuditController {
             @DateTimeFormat(
                     iso = DateTimeFormat.ISO.DATE
             )
-            LocalDate toDate
+            LocalDate toDate,
+
+            Pageable pageable
 
     ) {
 
@@ -63,7 +67,9 @@ public class AuditController {
 
                         fromDate,
 
-                        toDate
+                        toDate,
+
+                        pageable
 
                 )
 

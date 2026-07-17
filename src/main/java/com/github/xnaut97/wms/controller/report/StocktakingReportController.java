@@ -6,6 +6,8 @@ import com.github.xnaut97.wms.dto.report.stocktaking.StocktakingSummaryReportRes
 import com.github.xnaut97.wms.dto.report.stocktaking.StocktakingVarianceReportResponse;
 import com.github.xnaut97.wms.service.report.StocktakingReportService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,13 +30,15 @@ public class StocktakingReportController {
             'EXECUTIVE_BOARD'
             )
             """)
-    public ApiResponse<List<StocktakingReportResponse>> report() {
+    public ApiResponse<Page<StocktakingReportResponse>> report(
+            Pageable pageable
+    ) {
 
         return ApiResponse.success(
 
                 "Stocktaking report retrieved successfully",
 
-                service.getStocktakingReport()
+                service.getStocktakingReport(pageable)
 
         );
 
@@ -48,13 +52,15 @@ public class StocktakingReportController {
             'EXECUTIVE_BOARD'
             )
             """)
-    public ApiResponse<List<StocktakingVarianceReportResponse>> variances() {
+    public ApiResponse<Page<StocktakingVarianceReportResponse>> variances(
+            Pageable pageable
+    ) {
 
         return ApiResponse.success(
 
                 "Variance report retrieved successfully",
 
-                service.getVarianceReport()
+                service.getVarianceReport(pageable)
 
         );
 
