@@ -191,7 +191,7 @@ public class WarehouseService {
                 .managerName(
                         warehouse.getManager() == null
                                 ? null
-                                : warehouse.getManager().getFullName()
+                                : warehouse.getManager().getUsername()
                 )
                 .enabled(warehouse.getEnabled())
                 .build();
