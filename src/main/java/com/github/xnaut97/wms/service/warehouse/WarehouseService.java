@@ -64,7 +64,7 @@ public class WarehouseService {
     public WarehouseResponse create(WarehouseRequest request){
 
         if(repository.existsByCode(request.getCode())){
-            throw new BusinessException("Warehouse code already exists");
+            throw new BusinessException("Mã kho đã tồn tại");
         }
 
         User manager = null;
@@ -76,7 +76,7 @@ public class WarehouseService {
         if (manager != null && manager.getRole().getRole() != RoleType.WAREHOUSE_MANAGER) {
 
             throw new BusinessException(
-                    "Selected user is not a warehouse manager."
+                    "Người dùng này không có vai trò quản lý kho."
             );
         }
 
@@ -115,7 +115,7 @@ public class WarehouseService {
             if (manager.getRole().getRole() != RoleType.WAREHOUSE_MANAGER) {
 
                 throw new BusinessException(
-                        "Selected user is not a warehouse manager."
+                        "Người dùng này không có vai trò quản lý kho."
                 );
 
             }
@@ -159,7 +159,7 @@ public class WarehouseService {
         if(warehouse.getManager() == null){
 
             throw new BusinessException(
-                    "Warehouse has no manager."
+                    "Kho chưa có quản lý."
             );
 
         }
@@ -168,7 +168,7 @@ public class WarehouseService {
                 .equals(currentUser.getId())){
 
             throw new BusinessException(
-                    "Access denied."
+                    "Truy cập bị từ chối."
             );
 
         }
@@ -202,7 +202,7 @@ public class WarehouseService {
 
         return repository.findById(id)
                 .orElseThrow(() ->
-                        new BusinessException("Warehouse not found"));
+                        new BusinessException("Không tìm thấy kho"));
 
     }
 

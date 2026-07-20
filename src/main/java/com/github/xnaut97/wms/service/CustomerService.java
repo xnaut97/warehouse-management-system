@@ -29,7 +29,7 @@ public class CustomerService {
 
         if (request.getEmail() != null &&
                 repository.existsByEmail(request.getEmail())) {
-            throw new BusinessException("Email already exists.");
+            throw new BusinessException("Email đã tồn tại.");
         }
 
         Customer customer = new Customer();
@@ -77,7 +77,7 @@ public class CustomerService {
                 && repository.existsByEmail(request.getEmail())) {
 
             throw new BusinessException(
-                    "Email already exists."
+                    "Email đã tồn tại."
             );
 
         }
@@ -142,7 +142,7 @@ public class CustomerService {
         return repository.findById(id)
                 .orElseThrow(() ->
                         new BusinessException(
-                                "Customer not found."
+                                "Không tìm thấy khách hàng."
                         ));
 
     }

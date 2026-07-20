@@ -20,6 +20,6 @@ public class CustomUserDetailsService
         return repository.findByUsername(username)
                 .map(CustomUserDetails::new)
                 .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found"));
+                        new UsernameNotFoundException("Không tìm thấy người dùng"));
     }
 }

@@ -30,7 +30,7 @@ public class FinishedProductService {
 
         if (repository.existsByCode(request.getCode())) {
             throw new BusinessException(
-                    "Finished product code already exists."
+                    "Mã thành phẩm đã tồn tại."
             );
         }
 
@@ -147,7 +147,7 @@ public class FinishedProductService {
         return repository.findById(id)
                 .orElseThrow(() ->
                         new BusinessException(
-                                "Finished product not found."
+                                "Không tìm thấy thành phẩm."
                         ));
 
     }

@@ -35,7 +35,7 @@ public class AuthService {
 
         CustomUserDetails details = (CustomUserDetails) authentication.getPrincipal();
         if(details == null)
-            throw new BusinessException("User not found");
+            throw new BusinessException("Không tìm thấy người dùng");
 
         User user = details.getUser();
 

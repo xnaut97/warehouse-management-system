@@ -83,7 +83,7 @@ public class InventoryService {
         return repository.findById(id)
                 .orElseThrow(() ->
                         new BusinessException(
-                                "Inventory not found."
+                                "Không tìm thấy tồn kho."
                         ));
 
     }

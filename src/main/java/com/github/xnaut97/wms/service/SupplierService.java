@@ -54,7 +54,7 @@ public class SupplierService {
     public SupplierResponse create(SupplierRequest request){
 
         if(repository.existsByCode(request.getCode())){
-            throw new BusinessException("Supplier code already exists");
+            throw new BusinessException("Mã nhà cung cấp đã tồn tại");
         }
 
         Supplier supplier = new Supplier();
@@ -83,7 +83,7 @@ public class SupplierService {
         if (!supplier.getCode().equals(request.getCode())
                 && repository.existsByCode(request.getCode())) {
 
-            throw new BusinessException("Supplier code already exists");
+            throw new BusinessException("Mã nhà cung cấp đã tồn tại");
         }
 
         supplier.setCode(request.getCode());
@@ -141,7 +141,7 @@ public class SupplierService {
 
         return repository.findById(id)
                 .orElseThrow(() ->
-                        new BusinessException("Supplier not found"));
+                        new BusinessException("Không tìm thấy nhà cung cấp"));
 
     }
 

@@ -164,7 +164,7 @@ public class StocktakingService {
                 request.getMaterialId())) {
 
             throw new BusinessException(
-                    "Material already exists in this stocktaking."
+                    "Nguyên liệu đã tồn tại trong phiếu kiểm kho này."
             );
         }
 
@@ -172,7 +172,7 @@ public class StocktakingService {
 
         if (stocktaking.getStatus() != StocktakingStatus.DRAFT) {
             throw new BusinessException(
-                    "Cannot modify confirmed stocktaking."
+                    "Không thể chỉnh sửa phiếu kiểm kho đã xác nhận."
             );
         }
 
@@ -188,7 +188,7 @@ public class StocktakingService {
                         )
                         .orElseThrow(() ->
                                 new BusinessException(
-                                        "Inventory not found."
+                                        "Không tìm thấy tồn kho."
                                 ));
 
         BigDecimal systemQuantity =
@@ -233,7 +233,7 @@ public class StocktakingService {
                 .orElseThrow(() ->
 
                         new BusinessException(
-                                "Stocktaking item not found."
+                                "Không tìm thấy dòng phiếu kiểm kho."
                         )
 
                 );
@@ -241,7 +241,7 @@ public class StocktakingService {
         if (item.getStocktaking().getStatus() != StocktakingStatus.DRAFT) {
 
             throw new BusinessException(
-                    "Cannot modify confirmed stocktaking."
+                    "Không thể chỉnh sửa phiếu kiểm kho đã xác nhận."
             );
 
         }
@@ -271,7 +271,7 @@ public class StocktakingService {
 
         if (stocktaking.getStatus() != StocktakingStatus.DRAFT) {
             throw new BusinessException(
-                    "Stocktaking has already been confirmed."
+                    "Phiếu kiểm kho đã được xác nhận."
             );
         }
 
@@ -280,7 +280,7 @@ public class StocktakingService {
 
         if (items.isEmpty()) {
             throw new BusinessException(
-                    "Stocktaking has no items."
+                    "Phiếu kiểm kho chưa có dòng hàng nào."
             );
         }
 
@@ -321,7 +321,7 @@ public class StocktakingService {
                 .orElseThrow(() ->
 
                         new BusinessException(
-                                "Inventory not found."
+                                "Không tìm thấy tồn kho."
                         )
 
                 );
@@ -384,7 +384,7 @@ public class StocktakingService {
         return repository.findById(id)
                 .orElseThrow(() ->
                         new BusinessException(
-                                "Stocktaking not found."
+                                "Không tìm thấy phiếu kiểm kho."
                         )
                 );
 

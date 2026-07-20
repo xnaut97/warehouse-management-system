@@ -45,7 +45,7 @@ public class RawMaterialService {
     public MaterialResponse create(MaterialRequest request) {
 
         if (repository.existsByCode(request.getCode())) {
-            throw new BusinessException("Material code already exists");
+            throw new BusinessException("Mã nguyên liệu đã tồn tại");
         }
 
         Supplier supplier =
@@ -77,7 +77,7 @@ public class RawMaterialService {
 
         if (!material.getCode().equals(request.getCode())
                 && repository.existsByCode(request.getCode())) {
-            throw new BusinessException("Material code already exists");
+            throw new BusinessException("Mã nguyên liệu đã tồn tại");
         }
 
         Supplier supplier =
@@ -164,7 +164,7 @@ public class RawMaterialService {
 
         return repository.findById(id)
                 .orElseThrow(() ->
-                        new BusinessException("Material not found"));
+                        new BusinessException("Không tìm thấy nguyên liệu"));
 
     }
 }

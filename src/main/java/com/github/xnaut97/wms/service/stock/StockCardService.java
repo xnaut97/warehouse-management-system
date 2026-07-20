@@ -96,7 +96,7 @@ public class StockCardService {
         if (transactions.isEmpty()) {
 
             throw new BusinessException(
-                    "No transactions found."
+                    "Không tìm thấy giao dịch."
             );
 
         }

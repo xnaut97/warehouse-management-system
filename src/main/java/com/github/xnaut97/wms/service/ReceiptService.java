@@ -101,7 +101,7 @@ public class ReceiptService {
 
         if (items.isEmpty()) {
             throw new BusinessException(
-                    "Receipt has no items."
+                    "Phiếu nhập chưa có dòng hàng nào."
             );
         }
 
@@ -133,7 +133,7 @@ public class ReceiptService {
                 request.getMaterialId())) {
 
             throw new BusinessException(
-                    "This material already exists in the receipt."
+                    "Nguyên liệu này đã tồn tại trong phiếu nhập."
             );
         }
 
@@ -141,7 +141,7 @@ public class ReceiptService {
 
         if (receipt.getStatus() != ReceiptStatus.DRAFT) {
             throw new BusinessException(
-                    "Cannot modify confirmed receipt."
+                    "Không thể chỉnh sửa phiếu nhập đã xác nhận."
             );
         }
 
@@ -185,7 +185,7 @@ public class ReceiptService {
 
         User currentUser = getCurrentUser();
         if(currentUser == null)
-            throw new BusinessException("User not found");
+            throw new BusinessException("Không tìm thấy người dùng");
 
         GoodsReceipt receipt = new GoodsReceipt();
 
@@ -330,7 +330,7 @@ public class ReceiptService {
 
         return repository.findById(id)
                 .orElseThrow(() ->
-                        new BusinessException("Receipt not found"));
+                        new BusinessException("Không tìm thấy phiếu nhập"));
 
     }
 
@@ -449,7 +449,7 @@ public class ReceiptService {
                 .findByIdAndReceiptId(itemId, receiptId)
                 .orElseThrow(() ->
                         new BusinessException(
-                                "Receipt item not found"
+                                "Không tìm thấy dòng phiếu nhập"
                         ));
 
     }
@@ -458,7 +458,7 @@ public class ReceiptService {
 
         if (receipt.getStatus() != ReceiptStatus.DRAFT) {
             throw new BusinessException(
-                    "Only draft receipts can be modified."
+                    "Chỉ có thể chỉnh sửa phiếu nhập ở trạng thái nháp."
             );
         }
 

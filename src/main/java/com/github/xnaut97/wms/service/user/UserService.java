@@ -49,7 +49,7 @@ public class UserService {
 
         User user = userRepository.findById(id)
                 .orElseThrow(() ->
-                        new BusinessException("User not found"));
+                        new BusinessException("Không tìm thấy người dùng"));
 
         return mapToResponse(user);
 
@@ -62,20 +62,20 @@ public class UserService {
     public UserResponse createUser(UserRequest request) {
 
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new BusinessException("Username already exists");
+            throw new BusinessException("Tên người dùng đã tồn tại.");
         }
 
         if (request.getEmail() != null &&
                 !request.getEmail().isBlank() &&
                 userRepository.existsByEmail(request.getEmail())) {
 
-            throw new BusinessException("Email already exists");
+            throw new BusinessException("Email đã tồn tại.");
         }
 
         Role role = roleRepository.findByRole(
                 RoleType.valueOf(request.getRole().toUpperCase())
         ).orElseThrow(() ->
-                new BusinessException("Role not found"));
+                new BusinessException("Không tìm thấy vai trò " + request.getRole()));
 
         User user = new User();
 
@@ -104,13 +104,13 @@ public class UserService {
                 !request.getEmail().equalsIgnoreCase(user.getEmail()) &&
                 userRepository.existsByEmail(request.getEmail())) {
 
-            throw new BusinessException("Email already exists");
+            throw new BusinessException("Email đã tồn tại");
         }
 
         Role role = roleRepository.findByRole(
                 RoleType.valueOf(request.getRole().toUpperCase())
         ).orElseThrow(() ->
-                new BusinessException("Role not found"));
+                new BusinessException("Không tìm thấy vai trò"));
 
         user.setFullName(request.getFullName());
         user.setEmail(request.getEmail());
@@ -131,7 +131,7 @@ public class UserService {
         User user = findUserById(id);
 
         if (!user.getEnabled()) {
-            throw new BusinessException("User is already locked");
+            throw new BusinessException("Người dùng đã bị khóa");
         }
 
         user.setEnabled(false);
@@ -151,7 +151,7 @@ public class UserService {
         User user = findUserById(id);
 
         if (user.getEnabled()) {
-            throw new BusinessException("User is already unlocked");
+            throw new BusinessException("Người dùng chưa bị khóa");
         }
 
         user.setEnabled(true);
@@ -171,7 +171,7 @@ public class UserService {
         User user = findUserById(id);
 
         if (passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BusinessException("New password must be different from the current password");
+            throw new BusinessException("Mật khẩu mới phải khác mật khẩu hiện tại");
         }
 
         user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -202,14 +202,14 @@ public class UserService {
 
     public User findUserById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("User not found"));
+                .orElseThrow(() -> new BusinessException("Không tìm thấy người dùng"));
     }
 
     public User findByUsername(String username) {
 
         return userRepository.findByUsername(username)
                 .orElseThrow(() ->
-                        new BusinessException("User not found"));
+                        new BusinessException("Không tìm thấy người dùng"));
 
     }
 

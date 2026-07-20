@@ -124,7 +124,7 @@ public class IssueService {
                 request.getMaterialId())){
 
             throw new BusinessException(
-                    "Material already exists in this issue."
+                    "Nguyên liệu đã tồn tại trong phiếu xuất này."
             );
 
         }
@@ -207,7 +207,7 @@ public class IssueService {
                 itemRepository.findById(itemId)
                         .orElseThrow(() ->
                                 new BusinessException(
-                                        "Issue item not found."
+                                        "Không tìm thấy dòng phiếu xuất."
                                 ));
 
         item.setQuantity(request.getQuantity());
@@ -243,7 +243,7 @@ public class IssueService {
                 itemRepository.findById(itemId)
                         .orElseThrow(() ->
                                 new BusinessException(
-                                        "Issue item not found."
+                                        "Không tìm thấy dòng phiếu xuất."
                                 ));
 
         itemRepository.delete(item);
@@ -266,7 +266,7 @@ public class IssueService {
         if(items.isEmpty()){
 
             throw new BusinessException(
-                    "Issue has no items."
+                    "Phiếu xuất chưa có dòng hàng nào."
             );
 
         }
@@ -352,7 +352,7 @@ public class IssueService {
                         )
                         .orElseThrow(() ->
                                 new BusinessException(
-                                        String.format("No inventory found for warehouse %d, material %d",
+                                        String.format("Không tìm thấy tồn kho cho kho %d, nguyên liệu %d",
                                                 issue.getWarehouse().getId(),
                                                 item.getMaterial().getId())
                                 ));
@@ -361,7 +361,7 @@ public class IssueService {
 
             throw new BusinessException(
                     String.format(
-                            "Insufficient inventory id %d for %s. Available: %s, Requested: %s",
+                            "Tồn kho id %d cho %s không đủ. Có sẵn: %s, Yêu cầu: %s",
                             inventory.getId(),
                             item.getMaterial().getName(),
                             inventory.getQuantity(),
@@ -438,7 +438,7 @@ public class IssueService {
         return repository.findById(id)
                 .orElseThrow(() ->
                         new BusinessException(
-                                "Issue not found."
+                                "Không tìm thấy phiếu xuất."
                         ));
 
     }
@@ -466,7 +466,7 @@ public class IssueService {
         if (issue.getStatus() != IssueStatus.DRAFT) {
 
             throw new BusinessException(
-                    "Only draft issues can be modified."
+                    "Chỉ có thể chỉnh sửa phiếu xuất ở trạng thái nháp."
             );
 
         }
