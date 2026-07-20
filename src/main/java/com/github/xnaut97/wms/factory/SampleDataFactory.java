@@ -55,11 +55,13 @@ public class SampleDataFactory {
         return user;
     }
 
-    public Warehouse warehouse(String code, String name) {
+    public Warehouse warehouse(String code, String name, User manager) {
 
         Warehouse warehouse = new Warehouse();
 
         warehouse.setCode(code);
+
+        warehouse.setManager(manager);
 
         warehouse.setName(name);
 

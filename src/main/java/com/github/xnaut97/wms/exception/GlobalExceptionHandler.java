@@ -18,7 +18,7 @@ public class GlobalExceptionHandler {
     ) {
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error("Invalid username or password"));
+                .body(ApiResponse.error("Tên đăng nhập hoặc mật khẩu không đúng"));
 
     }
 
@@ -63,7 +63,7 @@ public class GlobalExceptionHandler {
             DisabledException ex
     ) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error("Your account has been locked. Please contact the administrator."));
+                .body(ApiResponse.error("Tài khoản này đã bị khóa, vui lòng liên hệ ban quản trị."));
     }
 
 }
