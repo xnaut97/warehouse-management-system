@@ -339,6 +339,7 @@ public class ReceiptService {
                 .findByReceiptId(receipt.getId())
                 .stream()
                 .map(GoodsReceiptItem::getAmount)
+                .filter(amount -> amount != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         receipt.setTotalAmount(total);

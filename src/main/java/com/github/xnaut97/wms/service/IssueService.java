@@ -514,6 +514,7 @@ public class IssueService {
                 itemRepository.findByIssueId(issue.getId())
                         .stream()
                         .map(GoodsIssueItem::getAmount)
+                        .filter(amount -> amount != null)
                         .reduce(
                                 BigDecimal.ZERO,
                                 BigDecimal::add
