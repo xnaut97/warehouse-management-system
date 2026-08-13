@@ -7,10 +7,11 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Builder
-public class StocktakingResponse {
+public class StocktakingDetailResponse {
 
     private Long id;
 
@@ -31,5 +32,7 @@ public class StocktakingResponse {
     private String stocktaker;
 
     private String note;
+
+    private List<StocktakingItemResponse> items;
 
 }

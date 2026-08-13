@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
-public class UpdateStocktakingItemRequest {
+public class UpdateStocktakingItemBatchRequest {
 
     @NotNull
     @DecimalMin("0.00")

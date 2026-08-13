@@ -4,6 +4,7 @@ import com.github.xnaut97.wms.entity.BaseEntity;
 import com.github.xnaut97.wms.entity.common.Warehouse;
 import com.github.xnaut97.wms.entity.user.User;
 import com.github.xnaut97.wms.enums.StocktakingStatus;
+import com.github.xnaut97.wms.enums.StocktakingType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,8 +30,15 @@ public class Stocktaking extends BaseEntity {
     @Column(nullable = false)
     private StocktakingStatus status;
 
+    @Enumerated(EnumType.STRING)
+    private StocktakingType type;
+
     @Column(length = 1000)
     private String note;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "stocktaker_id")
+    private User stocktaker;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)

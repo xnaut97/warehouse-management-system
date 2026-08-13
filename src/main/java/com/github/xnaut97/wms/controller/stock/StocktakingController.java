@@ -100,6 +100,33 @@ public class StocktakingController {
 
     }
 
+    @PutMapping("/batches/{batchId}")
+    @PreAuthorize("""
+            hasAnyRole(
+            'ADMIN',
+            'WAREHOUSE_MANAGER'
+            )
+            """)
+    public ApiResponse<StocktakingItemResponse> updateBatch(
+
+            @PathVariable Long batchId,
+
+            @RequestBody
+            @Valid
+            UpdateStocktakingItemBatchRequest request
+
+    ) {
+
+        return ApiResponse.success(
+
+                "Batch updated successfully",
+
+                service.updateBatch(batchId, request)
+
+        );
+
+    }
+
     @PostMapping("/{id}/confirm")
     @PreAuthorize("""
             hasAnyRole(
@@ -121,6 +148,27 @@ public class StocktakingController {
 
     }
 
+    @PostMapping("/{id}/balance")
+    @PreAuthorize("""
+            hasAnyRole(
+            'ADMIN',
+            'WAREHOUSE_MANAGER'
+            )
+            """)
+    public ApiResponse<Void> balance(
+
+            @PathVariable Long id
+
+    ) {
+
+        service.balance(id);
+
+        return ApiResponse.success(
+                "Stocktaking balanced successfully"
+        );
+
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("""
             hasAnyRole(
@@ -130,7 +178,7 @@ public class StocktakingController {
             'EXECUTIVE_BOARD'
             )
             """)
-    public ApiResponse<StocktakingResponse> get(
+    public ApiResponse<StocktakingDetailResponse> get(
 
             @PathVariable Long id
 
