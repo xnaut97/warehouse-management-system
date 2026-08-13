@@ -19,9 +19,20 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class WarehouseService {
+
+    public static final String MATERIAL_WAREHOUSE_CODE = "WH001";
+
+    public static final String PRODUCT_WAREHOUSE_CODE = "WH002";
+
+    public static final List<String> STORAGE_AREA_CODES = List.of(
+            MATERIAL_WAREHOUSE_CODE,
+            PRODUCT_WAREHOUSE_CODE
+    );
 
     private final WarehouseRepository repository;
 
@@ -40,11 +51,7 @@ public class WarehouseService {
         Pageable pageable = PageRequest.of(page,size);
 
         return repository
-                .findByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(
-                        keyword,
-                        keyword,
-                        pageable
-                )
+                .findByCodeIn(STORAGE_AREA_CODES, pageable)
                 .map(this::map);
 
     }
@@ -62,6 +69,12 @@ public class WarehouseService {
             entity = "Warehouse"
     )
     public WarehouseResponse create(WarehouseRequest request){
+
+        if (!STORAGE_AREA_CODES.contains(request.getCode())) {
+            throw new BusinessException(
+                    "Hệ thống chỉ hỗ trợ Kho nguyên vật liệu và Kho sản phẩm."
+            );
+        }
 
         if(repository.existsByCode(request.getCode())){
             throw new BusinessException("Mã kho đã tồn tại");
@@ -140,11 +153,11 @@ public class WarehouseService {
     )
     public void delete(Long id){
 
-        Warehouse warehouse = findWarehouseById(id);
+        findWarehouseById(id);
 
-        warehouse.setEnabled(false);
-
-        repository.save(warehouse);
+        throw new BusinessException(
+                "Không thể xóa kho hệ thống. Vui lòng cập nhật trạng thái nếu cần."
+        );
 
     }
 

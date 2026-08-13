@@ -1,11 +1,11 @@
 package com.github.xnaut97.wms.seed;
 
 import com.github.xnaut97.wms.entity.common.Warehouse;
-import com.github.xnaut97.wms.entity.inventory.Inventory;
-import com.github.xnaut97.wms.entity.material.RawMaterial;
-import com.github.xnaut97.wms.repository.RawMaterialRepository;
+import com.github.xnaut97.wms.entity.inventory.MaterialInventory;
+import com.github.xnaut97.wms.entity.material.Material;
+import com.github.xnaut97.wms.repository.MaterialRepository;
 import com.github.xnaut97.wms.repository.WarehouseRepository;
-import com.github.xnaut97.wms.repository.inventory.InventoryRepository;
+import com.github.xnaut97.wms.repository.inventory.MaterialInventoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,28 +18,28 @@ import java.util.concurrent.ThreadLocalRandom;
 @RequiredArgsConstructor
 public class InventorySeeder {
 
-    private final InventoryRepository inventoryRepository;
+    private final MaterialInventoryRepository materialInventoryRepository;
 
     private final WarehouseRepository warehouseRepository;
 
-    private final RawMaterialRepository materialRepository;
+    private final MaterialRepository materialRepository;
 
     @Transactional
     public void seed() {
         if (materialRepository.count() == 0) return;
         if (warehouseRepository.count() == 0) return;
-        if (inventoryRepository.count() > 0) return;
+        if (materialInventoryRepository.count() > 0) return;
 
         List<Warehouse> warehouses = warehouseRepository.findAll();
-        List<RawMaterial> materials = materialRepository.findAll();
+        List<Material> materials = materialRepository.findAll();
 
         for (Warehouse warehouse : warehouses) {
-            for (RawMaterial material : materials) {
-                Inventory inventory = new Inventory();
-                inventory.setWarehouse(warehouse);
-                inventory.setMaterial(material);
-                inventory.setQuantity(randomQuantity());
-                inventoryRepository.save(inventory);
+            for (Material material : materials) {
+                MaterialInventory materialInventory = new MaterialInventory();
+                materialInventory.setWarehouse(warehouse);
+                materialInventory.setMaterial(material);
+                materialInventory.setQuantity(randomQuantity());
+                materialInventoryRepository.save(materialInventory);
             }
 
         }

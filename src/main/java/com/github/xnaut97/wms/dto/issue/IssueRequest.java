@@ -13,7 +13,6 @@ public class IssueRequest {
     @NotNull
     private Long warehouseId;
 
-    @NotNull
     private Long customerId;
 
     @NotNull

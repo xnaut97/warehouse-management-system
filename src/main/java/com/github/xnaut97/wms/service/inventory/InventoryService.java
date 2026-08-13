@@ -3,10 +3,10 @@ package com.github.xnaut97.wms.service.inventory;
 import com.github.xnaut97.wms.dto.inventory.InventoryDetailResponse;
 import com.github.xnaut97.wms.dto.inventory.InventoryResponse;
 import com.github.xnaut97.wms.dto.inventory.LowStockResponse;
-import com.github.xnaut97.wms.entity.inventory.Inventory;
+import com.github.xnaut97.wms.entity.inventory.MaterialInventory;
 import com.github.xnaut97.wms.enums.StockStatus;
 import com.github.xnaut97.wms.exception.BusinessException;
-import com.github.xnaut97.wms.repository.inventory.InventoryRepository;
+import com.github.xnaut97.wms.repository.inventory.MaterialInventoryRepository;
 import com.github.xnaut97.wms.specification.InventorySpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,7 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class InventoryService {
 
-    private final InventoryRepository repository;
+    private final MaterialInventoryRepository repository;
 
     @Transactional
     public List<LowStockResponse> getLowStock() {
@@ -70,13 +70,13 @@ public class InventoryService {
             Long id
     ) {
 
-        Inventory inventory = findInventoryById(id);
+        MaterialInventory materialInventory = findInventoryById(id);
 
-        return mapDetail(inventory);
+        return mapDetail(materialInventory);
 
     }
 
-    public Inventory findInventoryById(
+    public MaterialInventory findInventoryById(
             Long id
     ) {
 
@@ -89,48 +89,48 @@ public class InventoryService {
     }
 
     private InventoryResponse map(
-            Inventory inventory
+            MaterialInventory materialInventory
     ) {
 
         return InventoryResponse.builder()
-                .id(inventory.getId())
-                .warehouseId(inventory.getWarehouse().getId())
-                .warehouse(inventory.getWarehouse().getName())
-                .materialId(inventory.getMaterial().getId())
-                .materialCode(inventory.getMaterial().getCode())
-                .materialName(inventory.getMaterial().getName())
-                .quantity(inventory.getQuantity())
+                .id(materialInventory.getId())
+                .warehouseId(materialInventory.getWarehouse().getId())
+                .warehouse(materialInventory.getWarehouse().getName())
+                .materialId(materialInventory.getMaterial().getId())
+                .materialCode(materialInventory.getMaterial().getCode())
+                .materialName(materialInventory.getMaterial().getName())
+                .quantity(materialInventory.getQuantity())
                 .build();
 
     }
 
     private InventoryDetailResponse mapDetail(
-            Inventory inventory
+            MaterialInventory materialInventory
     ) {
 
         return InventoryDetailResponse.builder()
-                .id(inventory.getId())
-                .warehouseId(inventory.getWarehouse().getId())
-                .warehouse(inventory.getWarehouse().getName())
-                .materialId(inventory.getMaterial().getId())
-                .materialCode(inventory.getMaterial().getCode())
-                .materialName(inventory.getMaterial().getName())
-                .quantity(inventory.getQuantity())
+                .id(materialInventory.getId())
+                .warehouseId(materialInventory.getWarehouse().getId())
+                .warehouse(materialInventory.getWarehouse().getName())
+                .materialId(materialInventory.getMaterial().getId())
+                .materialCode(materialInventory.getMaterial().getCode())
+                .materialName(materialInventory.getMaterial().getName())
+                .quantity(materialInventory.getQuantity())
                 .build();
 
     }
 
     private LowStockResponse mapLowStock(
-            Inventory inventory
+            MaterialInventory materialInventory
     ) {
         StockStatus status;
 
-        if (inventory.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
+        if (materialInventory.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
 
             status = StockStatus.OUT_OF_STOCK;
 
-        } else if (inventory.getQuantity().compareTo(
-                inventory.getMaterial().getMinimumStock()
+        } else if (materialInventory.getQuantity().compareTo(
+                materialInventory.getMaterial().getMinimumStock()
         ) <= 0) {
 
             status = StockStatus.LOW;
@@ -144,39 +144,39 @@ public class InventoryService {
         return LowStockResponse.builder()
 
                 .inventoryId(
-                        inventory.getId()
+                        materialInventory.getId()
                 )
 
                 .warehouseId(
-                        inventory.getWarehouse().getId()
+                        materialInventory.getWarehouse().getId()
                 )
 
                 .warehouse(
-                        inventory.getWarehouse().getName()
+                        materialInventory.getWarehouse().getName()
                 )
 
                 .materialId(
-                        inventory.getMaterial().getId()
+                        materialInventory.getMaterial().getId()
                 )
 
                 .materialCode(
-                        inventory.getMaterial().getCode()
+                        materialInventory.getMaterial().getCode()
                 )
 
                 .materialName(
-                        inventory.getMaterial().getName()
+                        materialInventory.getMaterial().getName()
                 )
 
                 .currentStock(
-                        inventory.getQuantity()
+                        materialInventory.getQuantity()
                 )
 
                 .minimumStock(
-                        inventory.getMaterial().getMinimumStock()
+                        materialInventory.getMaterial().getMinimumStock()
                 )
 
                 .unit(
-                        inventory.getMaterial().getUnit()
+                        materialInventory.getMaterial().getUnit()
                 )
                 .status(status)
                 .build();

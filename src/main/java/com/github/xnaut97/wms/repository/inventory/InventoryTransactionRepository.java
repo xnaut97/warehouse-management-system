@@ -3,6 +3,7 @@ package com.github.xnaut97.wms.repository.inventory;
 import com.github.xnaut97.wms.dto.dashboard.SlowMovingMaterialResponse;
 import com.github.xnaut97.wms.entity.inventory.InventoryTransaction;
 import com.github.xnaut97.wms.enums.InventoryTransactionType;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -81,7 +82,7 @@ public interface InventoryTransactionRepository
             m.name,
             (
                 SELECT COALESCE(SUM(i.quantity),0)
-                FROM Inventory i
+                FROM MaterialInventory i
                 WHERE i.material = m
             ),
             (
@@ -91,7 +92,7 @@ public interface InventoryTransactionRepository
                 AND t.type = :type
             )
             )
-            FROM RawMaterial m
+            FROM Material m
             WHERE NOT EXISTS (
                 SELECT recentTransaction
                 FROM InventoryTransaction recentTransaction
@@ -109,5 +110,15 @@ public interface InventoryTransactionRepository
             @Param("cutoff")
             LocalDateTime cutoff
 
+    );
+
+    @Query("""
+            SELECT t
+            FROM InventoryTransaction t
+            JOIN FETCH t.material
+            ORDER BY t.createdAt DESC
+            """)
+    List<InventoryTransaction> findRecentTransactions(
+            Pageable pageable
     );
 }

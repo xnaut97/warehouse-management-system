@@ -59,4 +59,25 @@ public interface GoodsReceiptItemRepository
             LocalDate fromDate
 
     );
+
+    @Query("""
+            SELECT i
+            FROM GoodsReceiptItem i
+            JOIN FETCH i.material
+            JOIN FETCH i.receipt r
+            WHERE r.status = 'CONFIRMED'
+            AND i.expirationDate IS NOT NULL
+            AND i.expirationDate >= :today
+            AND i.expirationDate <= :deadline
+            ORDER BY i.expirationDate ASC
+            """)
+    List<GoodsReceiptItem> findNearExpirationItems(
+
+            @Param("today")
+            LocalDate today,
+
+            @Param("deadline")
+            LocalDate deadline
+
+    );
 }

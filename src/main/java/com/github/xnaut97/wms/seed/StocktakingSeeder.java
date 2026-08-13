@@ -3,8 +3,8 @@ package com.github.xnaut97.wms.seed;
 import com.github.xnaut97.wms.dto.stocktaking.AddStocktakingItemRequest;
 import com.github.xnaut97.wms.dto.stocktaking.StocktakingRequest;
 import com.github.xnaut97.wms.entity.common.Warehouse;
-import com.github.xnaut97.wms.entity.material.RawMaterial;
-import com.github.xnaut97.wms.repository.RawMaterialRepository;
+import com.github.xnaut97.wms.entity.material.Material;
+import com.github.xnaut97.wms.repository.MaterialRepository;
 import com.github.xnaut97.wms.repository.WarehouseRepository;
 import com.github.xnaut97.wms.service.stock.StocktakingService;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class StocktakingSeeder {
 
     private final StocktakingService stocktakingService;
     private final WarehouseRepository warehouseRepository;
-    private final RawMaterialRepository materialRepository;
+    private final MaterialRepository materialRepository;
 
     public void seed() {
 
@@ -35,7 +35,7 @@ public class StocktakingSeeder {
         List<Warehouse> warehouses =
                 warehouseRepository.findAll();
 
-        List<RawMaterial> materials = materialRepository.findAll();
+        List<Material> materials = materialRepository.findAll();
 
         for (int i = 0; i < 3; i++) {
 
@@ -77,7 +77,7 @@ public class StocktakingSeeder {
             int randomItems = random.nextInt(1, materials.size() + 1);
 
             for (int j = 0; j < randomItems; j++) {
-                RawMaterial material = materials.get(j);
+                Material material = materials.get(j);
                 AddStocktakingItemRequest addItemRequest = new AddStocktakingItemRequest();
 
                 addItemRequest.setMaterialId(material.getId());

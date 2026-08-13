@@ -17,6 +17,8 @@ public class ReceiptItemResponse {
 
     private String materialName;
 
+    private String unit;
+
     private BigDecimal quantity;
 
     private BigDecimal unitPrice;

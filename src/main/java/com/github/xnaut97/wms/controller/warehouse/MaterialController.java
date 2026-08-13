@@ -4,7 +4,7 @@ import com.github.xnaut97.wms.dto.common.ApiResponse;
 import com.github.xnaut97.wms.dto.common.PageResponse;
 import com.github.xnaut97.wms.dto.material.MaterialRequest;
 import com.github.xnaut97.wms.dto.material.MaterialResponse;
-import com.github.xnaut97.wms.service.warehouse.RawMaterialService;
+import com.github.xnaut97.wms.service.warehouse.MaterialService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class MaterialController {
 
-    private final RawMaterialService service;
+    private final MaterialService service;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_STAFF')")

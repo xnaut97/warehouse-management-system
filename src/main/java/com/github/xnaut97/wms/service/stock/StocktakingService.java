@@ -3,9 +3,9 @@ package com.github.xnaut97.wms.service.stock;
 import com.github.xnaut97.wms.annotation.Audit;
 import com.github.xnaut97.wms.dto.stocktaking.*;
 import com.github.xnaut97.wms.entity.common.Warehouse;
-import com.github.xnaut97.wms.entity.inventory.Inventory;
+import com.github.xnaut97.wms.entity.inventory.MaterialInventory;
 import com.github.xnaut97.wms.entity.inventory.InventoryTransaction;
-import com.github.xnaut97.wms.entity.material.RawMaterial;
+import com.github.xnaut97.wms.entity.material.Material;
 import com.github.xnaut97.wms.entity.stock.Stocktaking;
 import com.github.xnaut97.wms.entity.stock.StocktakingItem;
 import com.github.xnaut97.wms.entity.user.User;
@@ -14,12 +14,12 @@ import com.github.xnaut97.wms.enums.DocumentType;
 import com.github.xnaut97.wms.enums.InventoryTransactionType;
 import com.github.xnaut97.wms.enums.StocktakingStatus;
 import com.github.xnaut97.wms.exception.BusinessException;
-import com.github.xnaut97.wms.repository.inventory.InventoryRepository;
+import com.github.xnaut97.wms.repository.inventory.MaterialInventoryRepository;
 import com.github.xnaut97.wms.repository.inventory.InventoryTransactionRepository;
 import com.github.xnaut97.wms.repository.stocktaking.StocktakingItemRepository;
 import com.github.xnaut97.wms.repository.stocktaking.StocktakingRepository;
 import com.github.xnaut97.wms.service.DocumentNumberService;
-import com.github.xnaut97.wms.service.warehouse.RawMaterialService;
+import com.github.xnaut97.wms.service.warehouse.MaterialService;
 import com.github.xnaut97.wms.service.warehouse.WarehouseService;
 import com.github.xnaut97.wms.service.user.UserService;
 import com.github.xnaut97.wms.specification.StocktakingSpecification;
@@ -49,9 +49,9 @@ public class StocktakingService {
 
     private final StocktakingItemRepository itemRepository;
 
-    private final RawMaterialService materialService;
+    private final MaterialService materialService;
 
-    private final InventoryRepository inventoryRepository;
+    private final MaterialInventoryRepository materialInventoryRepository;
 
     private final InventoryTransactionRepository transactionRepository;
 
@@ -176,12 +176,12 @@ public class StocktakingService {
             );
         }
 
-        RawMaterial material =
+        Material material =
                 materialService.findMaterialById(
                         request.getMaterialId()
                 );
 
-        Inventory inventory = inventoryRepository
+        MaterialInventory materialInventory = materialInventoryRepository
                         .findByWarehouseIdAndMaterialId(
                                 stocktaking.getWarehouse().getId(),
                                 material.getId()
@@ -192,7 +192,7 @@ public class StocktakingService {
                                 ));
 
         BigDecimal systemQuantity =
-                inventory.getQuantity();
+                materialInventory.getQuantity();
 
         BigDecimal physicalQuantity =
                 request.getPhysicalQuantity();
@@ -308,7 +308,7 @@ public class StocktakingService {
 
     ) {
 
-        Inventory inventory = inventoryRepository
+        MaterialInventory materialInventory = materialInventoryRepository
 
                 .findByWarehouseIdAndMaterialId(
 
@@ -326,11 +326,11 @@ public class StocktakingService {
 
                 );
 
-        inventory.setQuantity(
+        materialInventory.setQuantity(
                 item.getPhysicalQuantity()
         );
 
-        inventoryRepository.save(inventory);
+        materialInventoryRepository.save(materialInventory);
 
     }
 

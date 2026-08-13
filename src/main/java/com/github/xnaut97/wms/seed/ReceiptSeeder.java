@@ -3,9 +3,9 @@ package com.github.xnaut97.wms.seed;
 import com.github.xnaut97.wms.dto.receipt.AddReceiptItemRequest;
 import com.github.xnaut97.wms.dto.receipt.ReceiptRequest;
 import com.github.xnaut97.wms.entity.common.Warehouse;
-import com.github.xnaut97.wms.entity.material.RawMaterial;
+import com.github.xnaut97.wms.entity.material.Material;
 import com.github.xnaut97.wms.entity.material.Supplier;
-import com.github.xnaut97.wms.repository.RawMaterialRepository;
+import com.github.xnaut97.wms.repository.MaterialRepository;
 import com.github.xnaut97.wms.repository.SupplierRepository;
 import com.github.xnaut97.wms.repository.WarehouseRepository;
 import com.github.xnaut97.wms.service.ReceiptService;
@@ -28,14 +28,14 @@ public class ReceiptSeeder {
 
     private final SupplierRepository supplierRepository;
     private final WarehouseRepository warehouseRepository;
-    private final RawMaterialRepository materialRepository;
+    private final MaterialRepository materialRepository;
 
     public void seed() {
         if (materialRepository.count() == 0) return;
 
         List<Supplier> suppliers = supplierRepository.findAll();
         List<Warehouse> warehouses = warehouseRepository.findAll();
-        List<RawMaterial> materials = materialRepository.findAll();
+        List<Material> materials = materialRepository.findAll();
         if (materials.isEmpty()) return;
 
         ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -65,7 +65,7 @@ public class ReceiptSeeder {
 
             for (int j = 0; j < itemCount; j++) {
 
-                RawMaterial material = materials.get(j);
+                Material material = materials.get(j);
 
                 AddReceiptItemRequest item =
                         new AddReceiptItemRequest();

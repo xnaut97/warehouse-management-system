@@ -4,11 +4,11 @@ import com.github.xnaut97.wms.annotation.Audit;
 import com.github.xnaut97.wms.dto.common.PageResponse;
 import com.github.xnaut97.wms.dto.material.MaterialRequest;
 import com.github.xnaut97.wms.dto.material.MaterialResponse;
-import com.github.xnaut97.wms.entity.material.RawMaterial;
+import com.github.xnaut97.wms.entity.material.Material;
 import com.github.xnaut97.wms.entity.material.Supplier;
 import com.github.xnaut97.wms.enums.AuditAction;
 import com.github.xnaut97.wms.exception.BusinessException;
-import com.github.xnaut97.wms.repository.RawMaterialRepository;
+import com.github.xnaut97.wms.repository.MaterialRepository;
 import com.github.xnaut97.wms.service.SupplierService;
 import com.github.xnaut97.wms.utils.PageUtils;
 import lombok.RequiredArgsConstructor;
@@ -18,15 +18,15 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class RawMaterialService {
+public class MaterialService {
 
-    private final RawMaterialRepository repository;
+    private final MaterialRepository repository;
 
     private final SupplierService supplierService;
 
     public PageResponse<MaterialResponse> getAll(Pageable pageable) {
 
-        Page<RawMaterial> page = repository.findAll(pageable);
+        Page<Material> page = repository.findAll(pageable);
 
         return PageUtils.from(page, this::map);
 
@@ -44,6 +44,11 @@ public class RawMaterialService {
     )
     public MaterialResponse create(MaterialRequest request) {
 
+        validateStockRange(
+                request.getMinimumStock(),
+                request.getMaximumStock()
+        );
+
         if (repository.existsByCode(request.getCode())) {
             throw new BusinessException("Mã nguyên liệu đã tồn tại");
         }
@@ -51,13 +56,14 @@ public class RawMaterialService {
         Supplier supplier =
                 supplierService.findSupplierById(request.getSupplierId());
 
-        RawMaterial material = new RawMaterial();
+        Material material = new Material();
 
         material.setCode(request.getCode());
         material.setName(request.getName());
         material.setUnit(request.getUnit());
         material.setUnitPrice(request.getUnitPrice());
         material.setMinimumStock(request.getMinimumStock());
+        material.setMaximumStock(request.getMaximumStock());
         material.setSupplier(supplier);
         material.setEnabled(true);
 
@@ -73,7 +79,12 @@ public class RawMaterialService {
     )
     public MaterialResponse update(Long id, MaterialRequest request) {
 
-        RawMaterial material = findMaterialById(id);
+        Material material = findMaterialById(id);
+
+        validateStockRange(
+                request.getMinimumStock(),
+                request.getMaximumStock()
+        );
 
         if (!material.getCode().equals(request.getCode())
                 && repository.existsByCode(request.getCode())) {
@@ -88,6 +99,7 @@ public class RawMaterialService {
         material.setUnit(request.getUnit());
         material.setUnitPrice(request.getUnitPrice());
         material.setMinimumStock(request.getMinimumStock());
+        material.setMaximumStock(request.getMaximumStock());
         material.setSupplier(supplier);
 
         repository.save(material);
@@ -102,7 +114,7 @@ public class RawMaterialService {
     )
     public MaterialResponse disable(Long id) {
 
-        RawMaterial material = findMaterialById(id);
+        Material material = findMaterialById(id);
 
         material.setEnabled(false);
 
@@ -118,7 +130,7 @@ public class RawMaterialService {
     )
     public MaterialResponse enable(Long id) {
 
-        RawMaterial material = findMaterialById(id);
+        Material material = findMaterialById(id);
 
         material.setEnabled(true);
 
@@ -133,7 +145,7 @@ public class RawMaterialService {
             Pageable pageable
     ) {
 
-        Page<RawMaterial> page =
+        Page<Material> page =
                 repository.findByCodeContainingIgnoreCaseOrNameContainingIgnoreCase(
                         keyword,
                         keyword,
@@ -144,7 +156,7 @@ public class RawMaterialService {
 
     }
 
-    private MaterialResponse map(RawMaterial material) {
+    private MaterialResponse map(Material material) {
 
         return MaterialResponse.builder()
                 .id(material.getId())
@@ -153,6 +165,7 @@ public class RawMaterialService {
                 .unit(material.getUnit())
                 .unitPrice(material.getUnitPrice())
                 .minimumStock(material.getMinimumStock())
+                .maximumStock(material.getMaximumStock())
                 .supplierId(material.getSupplier().getId())
                 .supplierName(material.getSupplier().getName())
                 .enabled(material.getEnabled())
@@ -160,11 +173,22 @@ public class RawMaterialService {
 
     }
 
-    public RawMaterial findMaterialById(Long id) {
+    public Material findMaterialById(Long id) {
 
         return repository.findById(id)
                 .orElseThrow(() ->
                         new BusinessException("Không tìm thấy nguyên liệu"));
+
+    }
+
+    private void validateStockRange(
+            java.math.BigDecimal minimumStock,
+            java.math.BigDecimal maximumStock
+    ) {
+
+        if (maximumStock.compareTo(minimumStock) < 0) {
+            throw new BusinessException("Tồn max phải lớn hơn hoặc bằng tồn min.");
+        }
 
     }
 }

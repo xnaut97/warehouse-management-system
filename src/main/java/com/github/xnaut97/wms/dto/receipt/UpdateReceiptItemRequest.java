@@ -15,8 +15,6 @@ public class UpdateReceiptItemRequest {
     @DecimalMin("0.01")
     private BigDecimal quantity;
 
-    @NotNull
-    @DecimalMin("0.01")
     private BigDecimal unitPrice;
 
 }

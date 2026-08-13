@@ -21,6 +21,8 @@ public class MaterialResponse {
 
     private BigDecimal minimumStock;
 
+    private BigDecimal maximumStock;
+
     private Long supplierId;
 
     private String supplierName;

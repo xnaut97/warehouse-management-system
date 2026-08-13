@@ -9,6 +9,10 @@ public enum DocumentType {
 
     GOODS_ISSUE("GI"),
 
+    PRODUCT_RECEIPT("PR"),
+
+    PRODUCT_ISSUE("PI"),
+
     INVENTORY_CHECK("IC"),
 
     INVENTORY_ADJUSTMENT("ADJ");

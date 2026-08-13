@@ -10,7 +10,6 @@ import java.time.LocalDate;
 @Setter
 public class UpdateReceiptRequest {
 
-    @NotNull
     private Long supplierId;
 
     @NotNull

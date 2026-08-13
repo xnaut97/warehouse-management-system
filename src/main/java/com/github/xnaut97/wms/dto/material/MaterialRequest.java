@@ -27,7 +27,12 @@ public class MaterialRequest {
     private BigDecimal unitPrice;
 
     @NotNull
+    @PositiveOrZero
     private BigDecimal minimumStock;
+
+    @NotNull
+    @PositiveOrZero
+    private BigDecimal maximumStock;
 
     @NotNull
     private Long supplierId;

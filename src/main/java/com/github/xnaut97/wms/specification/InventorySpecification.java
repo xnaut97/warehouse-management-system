@@ -1,6 +1,6 @@
 package com.github.xnaut97.wms.specification;
 
-import com.github.xnaut97.wms.entity.inventory.Inventory;
+import com.github.xnaut97.wms.entity.inventory.MaterialInventory;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -9,7 +9,7 @@ import java.util.List;
 
 public class InventorySpecification {
 
-    public static Specification<Inventory> lowStock() {
+    public static Specification<MaterialInventory> lowStock() {
         return (root, query, cb) ->
                 cb.lessThanOrEqualTo(
                         root.get("quantity"),
@@ -19,7 +19,7 @@ public class InventorySpecification {
 
     }
 
-    public static Specification<Inventory> filter(
+    public static Specification<MaterialInventory> filter(
             Long warehouseId,
             Long materialId,
             String keyword

@@ -2,7 +2,7 @@ package com.github.xnaut97.wms.repository.report;
 
 import com.github.xnaut97.wms.dto.report.inventory.InventoryHistoryResponse;
 import com.github.xnaut97.wms.dto.report.inventory.InventoryReportResponse;
-import com.github.xnaut97.wms.entity.inventory.Inventory;
+import com.github.xnaut97.wms.entity.inventory.MaterialInventory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,10 +10,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 public interface InventoryReportRepository
-        extends JpaRepository<Inventory, Long> {
+        extends JpaRepository<MaterialInventory, Long> {
 
     @Query("""
         SELECT new com.github.xnaut97.wms.dto.report.inventory.InventoryReportResponse(
@@ -32,10 +31,10 @@ public interface InventoryReportRepository
                 ELSE 'NORMAL'
             END
         )
-        FROM Inventory i
+        FROM MaterialInventory i
         ORDER BY i.material.code
         """)
-    Page<InventoryReportResponse> getRawMaterialInventory(Pageable pageable);
+    Page<InventoryReportResponse> getMaterialInventory(Pageable pageable);
 
     @Query("""
         SELECT new com.github.xnaut97.wms.dto.report.inventory.InventoryHistoryResponse(

@@ -6,9 +6,9 @@ import com.github.xnaut97.wms.entity.common.Customer;
 import com.github.xnaut97.wms.entity.common.Warehouse;
 import com.github.xnaut97.wms.entity.goods.GoodsIssue;
 import com.github.xnaut97.wms.entity.goods.GoodsIssueItem;
-import com.github.xnaut97.wms.entity.inventory.Inventory;
+import com.github.xnaut97.wms.entity.inventory.MaterialInventory;
 import com.github.xnaut97.wms.entity.inventory.InventoryTransaction;
-import com.github.xnaut97.wms.entity.material.RawMaterial;
+import com.github.xnaut97.wms.entity.material.Material;
 import com.github.xnaut97.wms.entity.user.User;
 import com.github.xnaut97.wms.enums.AuditAction;
 import com.github.xnaut97.wms.enums.DocumentType;
@@ -17,10 +17,10 @@ import com.github.xnaut97.wms.enums.IssueStatus;
 import com.github.xnaut97.wms.exception.BusinessException;
 import com.github.xnaut97.wms.repository.goods.GoodsIssueItemRepository;
 import com.github.xnaut97.wms.repository.goods.GoodsIssueRepository;
-import com.github.xnaut97.wms.repository.inventory.InventoryRepository;
+import com.github.xnaut97.wms.repository.inventory.MaterialInventoryRepository;
 import com.github.xnaut97.wms.repository.inventory.InventoryTransactionRepository;
 import com.github.xnaut97.wms.service.user.UserService;
-import com.github.xnaut97.wms.service.warehouse.RawMaterialService;
+import com.github.xnaut97.wms.service.warehouse.MaterialService;
 import com.github.xnaut97.wms.service.warehouse.WarehouseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -45,13 +45,13 @@ public class IssueService {
 
     private final CustomerService customerService;
 
-    private final RawMaterialService materialService;
+    private final MaterialService materialService;
 
     private final UserService userService;
 
     private final DocumentNumberService generator;
 
-    private final InventoryRepository inventoryRepository;
+    private final MaterialInventoryRepository materialInventoryRepository;
 
     private final InventoryTransactionRepository transactionRepository;
 
@@ -80,9 +80,9 @@ public class IssueService {
                 warehouseService.findWarehouseById(
                         request.getWarehouseId());
 
-        Customer customer =
-                customerService.findCustomerById(
-                        request.getCustomerId());
+        Customer customer = request.getCustomerId() != null
+                ? customerService.findCustomerById(request.getCustomerId())
+                : null;
 
         User currentUser = getCurrentUser();
 
@@ -129,9 +129,14 @@ public class IssueService {
 
         }
 
-        RawMaterial material =
+        Material material =
                 materialService.findMaterialById(
                         request.getMaterialId());
+
+        BigDecimal unitPrice = request.getUnitPrice();
+        BigDecimal amount = unitPrice != null
+                ? request.getQuantity().multiply(unitPrice)
+                : null;
 
         GoodsIssueItem item = new GoodsIssueItem();
 
@@ -141,14 +146,9 @@ public class IssueService {
 
         item.setQuantity(request.getQuantity());
 
-        item.setUnitPrice(request.getUnitPrice());
+        item.setUnitPrice(unitPrice);
 
-        item.setAmount(
-
-                request.getQuantity()
-                        .multiply(request.getUnitPrice())
-
-        );
+        item.setAmount(amount);
 
         itemRepository.save(item);
 
@@ -183,7 +183,7 @@ public class IssueService {
                 .id(issue.getId())
                 .issueNo(issue.getIssueNo())
                 .warehouse(issue.getWarehouse().getName())
-                .customer(issue.getCustomer().getName())
+                .customer(issue.getCustomer() != null ? issue.getCustomer().getName() : null)
                 .issueDate(issue.getIssueDate())
                 .status(issue.getStatus())
                 .totalAmount(issue.getTotalAmount())
@@ -210,16 +210,16 @@ public class IssueService {
                                         "Không tìm thấy dòng phiếu xuất."
                                 ));
 
+        BigDecimal unitPrice = request.getUnitPrice();
+        BigDecimal amount = unitPrice != null
+                ? request.getQuantity().multiply(unitPrice)
+                : null;
+
         item.setQuantity(request.getQuantity());
 
-        item.setUnitPrice(request.getUnitPrice());
+        item.setUnitPrice(unitPrice);
 
-        item.setAmount(
-
-                request.getQuantity()
-                        .multiply(request.getUnitPrice())
-
-        );
+        item.setAmount(amount);
 
         itemRepository.save(item);
 
@@ -304,9 +304,9 @@ public class IssueService {
                 warehouseService.findWarehouseById(
                         request.getWarehouseId());
 
-        Customer customer =
-                customerService.findCustomerById(
-                        request.getCustomerId());
+        Customer customer = request.getCustomerId() != null
+                ? customerService.findCustomerById(request.getCustomerId())
+                : null;
 
         issue.setWarehouse(warehouse);
 
@@ -345,7 +345,7 @@ public class IssueService {
             GoodsIssue issue,
             GoodsIssueItem item
     ){
-        Inventory inventory = inventoryRepository
+        MaterialInventory materialInventory = materialInventoryRepository
                         .findByWarehouseIdAndMaterialId(
                                 issue.getWarehouse().getId(),
                                 item.getMaterial().getId()
@@ -357,14 +357,14 @@ public class IssueService {
                                                 item.getMaterial().getId())
                                 ));
 
-        if (inventory.getQuantity().compareTo(item.getQuantity()) < 0) {
+        if (materialInventory.getQuantity().compareTo(item.getQuantity()) < 0) {
 
             throw new BusinessException(
                     String.format(
                             "Tồn kho id %d cho %s không đủ. Có sẵn: %s, Yêu cầu: %s",
-                            inventory.getId(),
+                            materialInventory.getId(),
                             item.getMaterial().getName(),
-                            inventory.getQuantity(),
+                            materialInventory.getQuantity(),
                             item.getQuantity()
                     )
             );
@@ -377,23 +377,23 @@ public class IssueService {
             GoodsIssueItem item
     ){
 
-        Inventory inventory =
-                inventoryRepository
+        MaterialInventory materialInventory =
+                materialInventoryRepository
                         .findByWarehouseIdAndMaterialId(
                                 issue.getWarehouse().getId(),
                                 item.getMaterial().getId()
                         )
                         .orElseThrow();
 
-        inventory.setQuantity(
+        materialInventory.setQuantity(
 
-                inventory.getQuantity()
+                materialInventory.getQuantity()
 
                         .subtract(item.getQuantity())
 
         );
 
-        inventoryRepository.save(inventory);
+        materialInventoryRepository.save(materialInventory);
 
     }
 
@@ -482,6 +482,7 @@ public class IssueService {
                 .materialId(item.getMaterial().getId())
                 .materialCode(item.getMaterial().getCode())
                 .materialName(item.getMaterial().getName())
+                .unit(item.getMaterial().getUnit())
                 .quantity(item.getQuantity())
                 .unitPrice(item.getUnitPrice())
                 .amount(item.getAmount())
@@ -497,7 +498,7 @@ public class IssueService {
                 .id(issue.getId())
                 .issueNo(issue.getIssueNo())
                 .warehouse(issue.getWarehouse().getName())
-                .customer(issue.getCustomer().getName())
+                .customer(issue.getCustomer() != null ? issue.getCustomer().getName() : null)
                 .issueDate(issue.getIssueDate())
                 .status(issue.getStatus())
                 .totalAmount(issue.getTotalAmount())

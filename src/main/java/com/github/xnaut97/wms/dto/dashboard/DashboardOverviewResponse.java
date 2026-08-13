@@ -9,9 +9,9 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class DashboardOverviewResponse {
 
-    private long totalRawMaterials;
+    private long totalMaterials;
 
-    private long totalFinishedProducts;
+    private long totalProducts;
 
     private BigDecimal totalInventoryValue;
 

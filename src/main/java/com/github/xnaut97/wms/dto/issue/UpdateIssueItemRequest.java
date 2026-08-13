@@ -13,7 +13,6 @@ public class UpdateIssueItemRequest {
     @NotNull
     private BigDecimal quantity;
 
-    @NotNull
     private BigDecimal unitPrice;
 
 }

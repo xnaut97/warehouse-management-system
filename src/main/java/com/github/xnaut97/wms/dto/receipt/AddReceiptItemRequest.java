@@ -18,8 +18,6 @@ public class AddReceiptItemRequest {
     @DecimalMin(value = "0.01")
     private BigDecimal quantity;
 
-    @NotNull
-    @DecimalMin(value = "0.01")
     private BigDecimal unitPrice;
 
 }

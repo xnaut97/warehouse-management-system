@@ -32,7 +32,7 @@ public class InventoryReportController {
             'EXECUTIVE_BOARD'
             )
             """)
-    public ApiResponse<Page<InventoryReportResponse>> rawMaterialInventoryReport(
+    public ApiResponse<Page<InventoryReportResponse>> materialInventoryReport(
             Pageable pageable
     ) {
 
@@ -40,7 +40,7 @@ public class InventoryReportController {
 
                 "Inventory report retrieved successfully",
 
-                service.getRawMaterialInventoryReport(pageable)
+                service.getMaterialInventoryReport(pageable)
 
         );
 

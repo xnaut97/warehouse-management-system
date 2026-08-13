@@ -1,10 +1,10 @@
 package com.github.xnaut97.wms.factory;
 
-import com.github.xnaut97.wms.entity.FinishedProduct;
+import com.github.xnaut97.wms.entity.product.Product;
 import com.github.xnaut97.wms.entity.common.Customer;
 import com.github.xnaut97.wms.entity.common.Warehouse;
 import com.github.xnaut97.wms.entity.material.Supplier;
-import com.github.xnaut97.wms.entity.material.RawMaterial;
+import com.github.xnaut97.wms.entity.material.Material;
 import com.github.xnaut97.wms.entity.user.Role;
 import com.github.xnaut97.wms.entity.user.User;
 import com.github.xnaut97.wms.enums.RoleType;
@@ -65,7 +65,9 @@ public class SampleDataFactory {
 
         warehouse.setName(name);
 
-        warehouse.setAddress(name + " Address");
+        warehouse.setAddress(null);
+
+        warehouse.setDescription(null);
 
         warehouse.setEnabled(true);
 
@@ -114,7 +116,7 @@ public class SampleDataFactory {
         return customer;
     }
 
-    public RawMaterial material(
+    public Material material(
             String code,
             String name,
             String unit,
@@ -122,7 +124,7 @@ public class SampleDataFactory {
             Supplier supplier
     ) {
 
-        RawMaterial material = new RawMaterial();
+        Material material = new Material();
 
         material.setCode(code);
 
@@ -134,6 +136,8 @@ public class SampleDataFactory {
 
         material.setMinimumStock(BigDecimal.valueOf(50));
 
+        material.setMaximumStock(BigDecimal.valueOf(500));
+
         material.setSupplier(supplier);
 
         material.setEnabled(true);
@@ -141,7 +145,7 @@ public class SampleDataFactory {
         return material;
     }
 
-    public FinishedProduct finishedProduct(
+    public Product product(
 
             String code,
 
@@ -151,11 +155,13 @@ public class SampleDataFactory {
 
             String unit,
 
-            BigDecimal price
+            BigDecimal price,
+
+            String category
 
     ){
 
-        FinishedProduct product = new FinishedProduct();
+        Product product = new Product();
 
         product.setCode(code);
 
@@ -166,6 +172,14 @@ public class SampleDataFactory {
         product.setUnit(unit);
 
         product.setSellingPrice(price);
+
+        product.setAveragePrice(price);
+
+        product.setMinimumStock(BigDecimal.valueOf(20));
+
+        product.setMaximumStock(BigDecimal.valueOf(200));
+
+        product.setCategory(category);
 
         product.setEnabled(true);
 

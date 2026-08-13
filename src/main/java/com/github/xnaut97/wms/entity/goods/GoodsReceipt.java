@@ -24,7 +24,7 @@ public class GoodsReceipt extends BaseEntity {
     private String receiptNo;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(nullable = false)
+    @JoinColumn
     private Supplier supplier;
 
     @ManyToOne(fetch = FetchType.LAZY)

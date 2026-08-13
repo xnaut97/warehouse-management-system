@@ -1,10 +1,10 @@
-package com.github.xnaut97.wms.controller;
+package com.github.xnaut97.wms.controller.product;
 
 import com.github.xnaut97.wms.dto.common.ApiResponse;
-import com.github.xnaut97.wms.dto.product.FinishedProductRequest;
-import com.github.xnaut97.wms.dto.product.FinishedProductResponse;
-import com.github.xnaut97.wms.dto.product.UpdateFinishedProductRequest;
-import com.github.xnaut97.wms.service.FinishedProductService;
+import com.github.xnaut97.wms.dto.product.ProductRequest;
+import com.github.xnaut97.wms.dto.product.ProductResponse;
+import com.github.xnaut97.wms.dto.product.UpdateProductRequest;
+import com.github.xnaut97.wms.service.product.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -14,17 +14,17 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
-public class FinishedProductController {
+public class ProductController {
 
-    private final FinishedProductService service;
+    private final ProductService service;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER')")
-    public ApiResponse<FinishedProductResponse> create(
+    public ApiResponse<ProductResponse> create(
 
             @RequestBody
             @Valid
-            FinishedProductRequest request
+            ProductRequest request
 
     ) {
 
@@ -40,14 +40,14 @@ public class FinishedProductController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER')")
-    public ApiResponse<FinishedProductResponse> update(
+    public ApiResponse<ProductResponse> update(
 
             @PathVariable
             Long id,
 
             @RequestBody
             @Valid
-            UpdateFinishedProductRequest request
+            UpdateProductRequest request
 
     ) {
 
@@ -80,7 +80,7 @@ public class FinishedProductController {
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<FinishedProductResponse> getById(
+    public ApiResponse<ProductResponse> getById(
 
             @PathVariable
             Long id
@@ -96,7 +96,7 @@ public class FinishedProductController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<Page<FinishedProductResponse>> getAll(
+    public ApiResponse<Page<ProductResponse>> getAll(
 
             @RequestParam(defaultValue = "")
             String keyword,
@@ -123,7 +123,7 @@ public class FinishedProductController {
 
     @GetMapping("/search")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<Page<FinishedProductResponse>> search(
+    public ApiResponse<Page<ProductResponse>> search(
 
             @RequestParam
             String keyword,

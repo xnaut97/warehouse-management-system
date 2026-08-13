@@ -2,11 +2,11 @@ package com.github.xnaut97.wms.service;
 
 import com.github.xnaut97.wms.annotation.Audit;
 import com.github.xnaut97.wms.dto.receipt.*;
-import com.github.xnaut97.wms.entity.material.RawMaterial;
+import com.github.xnaut97.wms.entity.inventory.MaterialInventory;
+import com.github.xnaut97.wms.entity.material.Material;
 import com.github.xnaut97.wms.entity.material.Supplier;
 import com.github.xnaut97.wms.entity.user.User;
 import com.github.xnaut97.wms.entity.common.Warehouse;
-import com.github.xnaut97.wms.entity.inventory.Inventory;
 import com.github.xnaut97.wms.entity.inventory.InventoryTransaction;
 import com.github.xnaut97.wms.entity.goods.GoodsReceipt;
 import com.github.xnaut97.wms.entity.goods.GoodsReceiptItem;
@@ -17,10 +17,10 @@ import com.github.xnaut97.wms.enums.ReceiptStatus;
 import com.github.xnaut97.wms.exception.BusinessException;
 import com.github.xnaut97.wms.repository.goods.GoodsReceiptItemRepository;
 import com.github.xnaut97.wms.repository.goods.GoodsReceiptRepository;
-import com.github.xnaut97.wms.repository.inventory.InventoryRepository;
+import com.github.xnaut97.wms.repository.inventory.MaterialInventoryRepository;
 import com.github.xnaut97.wms.repository.inventory.InventoryTransactionRepository;
 import com.github.xnaut97.wms.service.user.UserService;
-import com.github.xnaut97.wms.service.warehouse.RawMaterialService;
+import com.github.xnaut97.wms.service.warehouse.MaterialService;
 import com.github.xnaut97.wms.service.warehouse.WarehouseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -49,9 +49,9 @@ public class ReceiptService {
 
     private final GoodsReceiptItemRepository itemRepository;
 
-    private final RawMaterialService materialService;
+    private final MaterialService materialService;
 
-    private final InventoryRepository inventoryRepository;
+    private final MaterialInventoryRepository materialInventoryRepository;
 
     private final InventoryTransactionRepository transactionRepository;
 
@@ -75,7 +75,7 @@ public class ReceiptService {
         return ReceiptDetailResponse.builder()
                 .id(receipt.getId())
                 .receiptNo(receipt.getReceiptNo())
-                .supplier(receipt.getSupplier().getName())
+                .supplier(receipt.getSupplier() != null ? receipt.getSupplier().getName() : null)
                 .warehouse(receipt.getWarehouse().getName())
                 .receiptDate(receipt.getReceiptDate())
                 .status(receipt.getStatus())
@@ -146,20 +146,20 @@ public class ReceiptService {
         }
 
 
-        RawMaterial material =
+        Material material =
                 materialService.findMaterialById(request.getMaterialId());
+
+        BigDecimal unitPrice = request.getUnitPrice();
+        BigDecimal amount = unitPrice != null
+                ? request.getQuantity().multiply(unitPrice)
+                : null;
 
         GoodsReceiptItem item = new GoodsReceiptItem();
 
         item.setReceipt(receipt);
         item.setMaterial(material);
         item.setQuantity(request.getQuantity());
-        item.setUnitPrice(request.getUnitPrice());
-
-        BigDecimal amount =
-                request.getQuantity()
-                        .multiply(request.getUnitPrice());
-
+        item.setUnitPrice(unitPrice);
         item.setAmount(amount);
 
         itemRepository.save(item);
@@ -177,8 +177,9 @@ public class ReceiptService {
     @Transactional
     public ReceiptResponse create(ReceiptRequest request) {
 
-        Supplier supplier =
-                supplierService.findSupplierById(request.getSupplierId());
+        Supplier supplier = request.getSupplierId() != null
+                ? supplierService.findSupplierById(request.getSupplierId())
+                : null;
 
         Warehouse warehouse =
                 warehouseService.findWarehouseById(request.getWarehouseId());
@@ -225,15 +226,14 @@ public class ReceiptService {
 
         item.setQuantity(request.getQuantity());
 
-        item.setUnitPrice(request.getUnitPrice());
+        BigDecimal unitPrice = request.getUnitPrice();
+        BigDecimal amount = unitPrice != null
+                ? request.getQuantity().multiply(unitPrice)
+                : null;
 
-        item.setAmount(
+        item.setUnitPrice(unitPrice);
 
-                request.getQuantity()
-
-                        .multiply(request.getUnitPrice())
-
-        );
+        item.setAmount(amount);
 
         itemRepository.save(item);
 
@@ -282,10 +282,9 @@ public class ReceiptService {
 
         validateDraft(receipt);
 
-        Supplier supplier =
-                supplierService.findSupplierById(
-                        request.getSupplierId()
-                );
+        Supplier supplier = request.getSupplierId() != null
+                ? supplierService.findSupplierById(request.getSupplierId())
+                : null;
 
         Warehouse warehouse =
                 warehouseService.findWarehouseById(
@@ -369,8 +368,8 @@ public class ReceiptService {
             GoodsReceiptItem item
     ) {
 
-        Inventory inventory =
-                inventoryRepository
+        MaterialInventory materialInventory =
+                materialInventoryRepository
                         .findByWarehouseIdAndMaterialId(
 
                                 receipt.getWarehouse().getId(),
@@ -380,7 +379,7 @@ public class ReceiptService {
                         )
                         .orElseGet(() -> {
 
-                            Inventory inv = new Inventory();
+                            MaterialInventory inv = new MaterialInventory();
 
                             inv.setWarehouse(receipt.getWarehouse());
 
@@ -392,15 +391,15 @@ public class ReceiptService {
 
                         });
 
-        inventory.setQuantity(
+        materialInventory.setQuantity(
 
-                inventory.getQuantity()
+                materialInventory.getQuantity()
 
                         .add(item.getQuantity())
 
         );
 
-        inventoryRepository.save(inventory);
+        materialInventoryRepository.save(materialInventory);
 
     }
 
@@ -473,6 +472,7 @@ public class ReceiptService {
                 .materialId(item.getMaterial().getId())
                 .materialCode(item.getMaterial().getCode())
                 .materialName(item.getMaterial().getName())
+                .unit(item.getMaterial().getUnit())
                 .quantity(item.getQuantity())
                 .unitPrice(item.getUnitPrice())
                 .amount(item.getAmount())
@@ -485,7 +485,7 @@ public class ReceiptService {
         return ReceiptResponse.builder()
                 .id(receipt.getId())
                 .receiptNo(receipt.getReceiptNo())
-                .supplier(receipt.getSupplier().getName())
+                .supplier(receipt.getSupplier() != null ? receipt.getSupplier().getName() : null)
                 .warehouse(receipt.getWarehouse().getName())
                 .receiptDate(receipt.getReceiptDate())
                 .status(receipt.getStatus())

@@ -1,7 +1,7 @@
 package com.github.xnaut97.wms.entity.inventory;
 
 import com.github.xnaut97.wms.entity.BaseEntity;
-import com.github.xnaut97.wms.entity.material.RawMaterial;
+import com.github.xnaut97.wms.entity.material.Material;
 import com.github.xnaut97.wms.entity.common.Warehouse;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -23,7 +23,7 @@ import java.math.BigDecimal;
                 )
         }
 )
-public class Inventory extends BaseEntity {
+public class MaterialInventory extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
@@ -31,7 +31,7 @@ public class Inventory extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
-    private RawMaterial material;
+    private Material material;
 
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal quantity = BigDecimal.ZERO;

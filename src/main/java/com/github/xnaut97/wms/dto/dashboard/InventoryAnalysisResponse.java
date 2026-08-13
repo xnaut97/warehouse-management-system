@@ -9,9 +9,9 @@ import java.math.BigDecimal;
 @Builder
 public class InventoryAnalysisResponse {
 
-    private long rawMaterialInventory;
+    private long materialInventory;
 
-    private long finishedProductInventory;
+    private long productInventory;
 
     private BigDecimal stockIn;
 

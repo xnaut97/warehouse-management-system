@@ -4,9 +4,9 @@ import com.github.xnaut97.wms.dto.issue.AddIssueItemRequest;
 import com.github.xnaut97.wms.dto.issue.IssueRequest;
 import com.github.xnaut97.wms.entity.common.Customer;
 import com.github.xnaut97.wms.entity.common.Warehouse;
-import com.github.xnaut97.wms.entity.material.RawMaterial;
+import com.github.xnaut97.wms.entity.material.Material;
 import com.github.xnaut97.wms.repository.CustomerRepository;
-import com.github.xnaut97.wms.repository.RawMaterialRepository;
+import com.github.xnaut97.wms.repository.MaterialRepository;
 import com.github.xnaut97.wms.repository.WarehouseRepository;
 import com.github.xnaut97.wms.repository.goods.GoodsIssueItemRepository;
 import com.github.xnaut97.wms.repository.goods.GoodsIssueRepository;
@@ -34,7 +34,7 @@ public class IssueSeeder {
 
     private final CustomerRepository customerRepository;
     private final WarehouseRepository warehouseRepository;
-    private final RawMaterialRepository materialRepository;
+    private final MaterialRepository materialRepository;
 
     public void seed() {
 
@@ -52,7 +52,7 @@ public class IssueSeeder {
 
         List<Warehouse> warehouses = warehouseRepository.findAll();
 
-        List<RawMaterial> materials = materialRepository.findAll();
+        List<Material> materials = materialRepository.findAll();
 
         for (int i = 0; i < 30; i++) {
 
@@ -107,7 +107,7 @@ public class IssueSeeder {
 
             for (int j = 0; j < items; j++) {
 
-                RawMaterial material = materials.get(j);
+                Material material = materials.get(j);
 
                 AddIssueItemRequest item = new AddIssueItemRequest();
 

@@ -1,7 +1,7 @@
 package com.github.xnaut97.wms.entity.goods;
 
 import com.github.xnaut97.wms.entity.BaseEntity;
-import com.github.xnaut97.wms.entity.material.RawMaterial;
+import com.github.xnaut97.wms.entity.material.Material;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,15 +20,15 @@ public class GoodsIssueItem extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
-    private RawMaterial material;
+    private Material material;
 
     @Column(nullable = false)
     private BigDecimal quantity;
 
-    @Column(nullable = false)
+    @Column
     private BigDecimal unitPrice;
 
-    @Column(nullable = false)
+    @Column
     private BigDecimal amount;
 
 }

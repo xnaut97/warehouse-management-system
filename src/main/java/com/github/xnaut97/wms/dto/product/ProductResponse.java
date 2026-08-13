@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 
 @Getter
 @Builder
-public class FinishedProductResponse {
+public class ProductResponse {
 
     private Long id;
 
@@ -20,6 +20,14 @@ public class FinishedProductResponse {
     private String unit;
 
     private BigDecimal sellingPrice;
+
+    private BigDecimal averagePrice;
+
+    private String category;
+
+    private BigDecimal minimumStock;
+
+    private BigDecimal maximumStock;
 
     private Boolean enabled;
 

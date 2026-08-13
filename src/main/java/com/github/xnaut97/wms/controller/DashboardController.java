@@ -194,4 +194,38 @@ public class DashboardController {
         );
 
     }
+
+    @GetMapping("/operation-alerts")
+    @PreAuthorize("""
+            hasAnyRole(
+            'ADMIN',
+            'WAREHOUSE_MANAGER',
+            'EXECUTIVE_BOARD'
+            )
+            """)
+    public ApiResponse<OperationAlertResponse> operationAlerts() {
+
+        return ApiResponse.success(
+                "Operation alerts retrieved successfully",
+                service.operationAlerts()
+        );
+
+    }
+
+    @GetMapping("/recent-transactions")
+    @PreAuthorize("""
+            hasAnyRole(
+            'ADMIN',
+            'WAREHOUSE_MANAGER',
+            'EXECUTIVE_BOARD'
+            )
+            """)
+    public ApiResponse<List<RecentTransactionResponse>> recentTransactions() {
+
+        return ApiResponse.success(
+                "Recent transactions retrieved successfully",
+                service.recentTransactions()
+        );
+
+    }
 }

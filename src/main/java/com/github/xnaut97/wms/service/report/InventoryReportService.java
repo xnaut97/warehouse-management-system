@@ -19,11 +19,11 @@ public class InventoryReportService {
     private final InventoryReportRepository inventoryReportRepository;
 
     @Transactional
-    public Page<InventoryReportResponse> getRawMaterialInventoryReport(
+    public Page<InventoryReportResponse> getMaterialInventoryReport(
             Pageable pageable
     ) {
 
-        return inventoryReportRepository.getRawMaterialInventory(pageable);
+        return inventoryReportRepository.getMaterialInventory(pageable);
 
     }
 

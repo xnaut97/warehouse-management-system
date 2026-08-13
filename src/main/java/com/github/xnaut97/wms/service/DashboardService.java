@@ -6,8 +6,9 @@ import com.github.xnaut97.wms.repository.goods.GoodsIssueRepository;
 import com.github.xnaut97.wms.repository.goods.GoodsIssueItemRepository;
 import com.github.xnaut97.wms.repository.goods.GoodsReceiptRepository;
 import com.github.xnaut97.wms.repository.goods.GoodsReceiptItemRepository;
-import com.github.xnaut97.wms.repository.inventory.InventoryRepository;
+import com.github.xnaut97.wms.repository.inventory.MaterialInventoryRepository;
 import com.github.xnaut97.wms.repository.inventory.InventoryTransactionRepository;
+import com.github.xnaut97.wms.repository.product.ProductRepository;
 import com.github.xnaut97.wms.repository.stocktaking.StocktakingItemRepository;
 import com.github.xnaut97.wms.repository.stocktaking.StocktakingRepository;
 import com.github.xnaut97.wms.annotation.Audit;
@@ -39,11 +40,11 @@ public class DashboardService {
 
     private final CustomerRepository customerRepository;
 
-    private final RawMaterialRepository materialRepository;
+    private final MaterialRepository materialRepository;
 
-    private final FinishedProductRepository finishedProductRepository;
+    private final ProductRepository productRepository;
 
-    private final InventoryRepository inventoryRepository;
+    private final MaterialInventoryRepository materialInventoryRepository;
 
     private final GoodsReceiptRepository receiptRepository;
 
@@ -93,11 +94,11 @@ public class DashboardService {
                 )
 
                 .inventoryRecords(
-                        inventoryRepository.count()
+                        materialInventoryRepository.count()
                 )
 
                 .lowStockItems(
-                        inventoryRepository.countLowStock()
+                        materialInventoryRepository.countLowStock()
                 )
 
                 .receiptsThisMonth(
@@ -120,7 +121,7 @@ public class DashboardService {
 
                 .totalInventoryValue(
                         getOrZero(
-                                inventoryRepository.getTotalInventoryValue()
+                                materialInventoryRepository.getTotalInventoryValue()
                         )
                 )
 
@@ -139,10 +140,10 @@ public class DashboardService {
 
                 materialRepository.count(),
 
-                finishedProductRepository.count(),
+                productRepository.count(),
 
                 getOrZero(
-                        inventoryRepository.getTotalInventoryValue()
+                        materialInventoryRepository.getTotalInventoryValue()
                 ),
 
                 getOrZero(
@@ -236,12 +237,12 @@ public class DashboardService {
 
         return InventoryAnalysisResponse.builder()
 
-                .rawMaterialInventory(
+                .materialInventory(
                         materialRepository.count()
                 )
 
-                .finishedProductInventory(
-                        finishedProductRepository.count()
+                .productInventory(
+                        productRepository.count()
                 )
 
                 .stockIn(
@@ -258,7 +259,7 @@ public class DashboardService {
 
                 .inventoryValue(
                         getOrZero(
-                                inventoryRepository.getTotalInventoryValue()
+                                materialInventoryRepository.getTotalInventoryValue()
                         )
                 )
 
@@ -311,11 +312,11 @@ public class DashboardService {
         return DecisionSupportResponse.builder()
 
                 .lowStockMaterials(
-                        inventoryRepository.findLowStockMaterials()
+                        materialInventoryRepository.findLowStockMaterials()
                 )
 
                 .replenishmentRecommendations(
-                        inventoryRepository.findReplenishmentRecommendations()
+                        materialInventoryRepository.findReplenishmentRecommendations()
                 )
 
                 .slowMovingMaterials(
@@ -346,7 +347,7 @@ public class DashboardService {
     @Transactional
     public List<LowStockAlertResponse> lowStockAlerts() {
 
-        return inventoryRepository.findLowStockItems()
+        return materialInventoryRepository.findLowStockItems()
 
                 .stream()
 
@@ -393,7 +394,7 @@ public class DashboardService {
     @Transactional
     public List<ReplenishmentRecommendationResponse> replenishmentRecommendations(){
 
-        return inventoryRepository.findLowStockItems()
+        return materialInventoryRepository.findLowStockItems()
 
                 .stream()
 
@@ -475,6 +476,75 @@ public class DashboardService {
 
     }
 
+    @Audit(
+            action = AuditAction.READ,
+            entity = "Dashboard"
+    )
+    @Transactional
+    public OperationAlertResponse operationAlerts() {
+
+        LocalDate today = LocalDate.now();
+        LocalDate deadline = today.plusDays(60);
+
+        List<NearExpirationAlertResponse> nearExpiration =
+                receiptItemRepository.findNearExpirationItems(today, deadline)
+                        .stream()
+                        .map(item -> new NearExpirationAlertResponse(
+                                item.getLotNumber() != null
+                                        ? item.getLotNumber()
+                                        : item.getMaterial().getCode(),
+                                item.getMaterial().getName()
+                                        + (item.getLotNumber() != null
+                                        ? " - " + item.getLotNumber()
+                                        : ""),
+                                item.getExpirationDate(),
+                                java.time.temporal.ChronoUnit.DAYS.between(
+                                        today,
+                                        item.getExpirationDate()
+                                )
+                        ))
+                        .toList();
+
+        return OperationAlertResponse.builder()
+                .belowMin(materialInventoryRepository.findBelowMinAlerts())
+                .aboveMax(materialInventoryRepository.findAboveMaxAlerts())
+                .nearExpiration(nearExpiration)
+                .build();
+
+    }
+
+    @Audit(
+            action = AuditAction.READ,
+            entity = "Dashboard"
+    )
+    @Transactional
+    public List<RecentTransactionResponse> recentTransactions() {
+
+        java.time.format.DateTimeFormatter formatter =
+                java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+        return transactionRepository
+                .findRecentTransactions(PageRequest.of(0, 10))
+                .stream()
+                .map(t -> RecentTransactionResponse.builder()
+                        .id(t.getId())
+                        .time(t.getCreatedAt().format(formatter))
+                        .voucherNo(t.getReferenceNo())
+                        .itemCode(t.getMaterial().getCode())
+                        .transactionType(
+                                t.getType() == InventoryTransactionType.IN
+                                        ? "RECEIPT"
+                                        : "ISSUE"
+                        )
+                        .itemCategory("Nguyên vật liệu")
+                        .quantity(t.getQuantity())
+                        .status("COMPLETED")
+                        .build()
+                )
+                .toList();
+
+    }
+
     private BigDecimal getOrZero(BigDecimal value) {
 
         return value == null
@@ -486,7 +556,7 @@ public class DashboardService {
     private BigDecimal getTotalInventoryQuantity() {
 
         BigDecimal total =
-                inventoryRepository.getTotalQuantity();
+                materialInventoryRepository.getTotalQuantity();
 
         return total == null
                 ? BigDecimal.ZERO

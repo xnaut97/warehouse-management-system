@@ -2,7 +2,7 @@ package com.github.xnaut97.wms.seed;
 
 import com.github.xnaut97.wms.entity.material.Supplier;
 import com.github.xnaut97.wms.factory.SampleDataFactory;
-import com.github.xnaut97.wms.repository.RawMaterialRepository;
+import com.github.xnaut97.wms.repository.MaterialRepository;
 import com.github.xnaut97.wms.repository.SupplierRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class MaterialSeeder {
 
-    private final RawMaterialRepository repository;
+    private final MaterialRepository repository;
 
     private final SupplierRepository supplierRepository;
 
@@ -25,7 +25,15 @@ public class MaterialSeeder {
     @Transactional
     public void seed() {
         if (supplierRepository.count() == 0) return;
-        if (repository.count() > 0) return;
+        if (repository.count() > 0) {
+            repository.findAll().forEach(material -> {
+                if (material.getMaximumStock() == null) {
+                    material.setMaximumStock(BigDecimal.ZERO);
+                    repository.save(material);
+                }
+            });
+            return;
+        }
 
         List<Supplier> suppliers = supplierRepository.findAll();
 

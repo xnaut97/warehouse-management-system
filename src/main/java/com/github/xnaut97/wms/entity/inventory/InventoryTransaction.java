@@ -1,7 +1,7 @@
 package com.github.xnaut97.wms.entity.inventory;
 
 import com.github.xnaut97.wms.entity.BaseEntity;
-import com.github.xnaut97.wms.entity.material.RawMaterial;
+import com.github.xnaut97.wms.entity.material.Material;
 import com.github.xnaut97.wms.entity.user.User;
 import com.github.xnaut97.wms.entity.common.Warehouse;
 import com.github.xnaut97.wms.enums.InventoryTransactionType;
@@ -23,7 +23,7 @@ public class InventoryTransaction extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
-    private RawMaterial material;
+    private Material material;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

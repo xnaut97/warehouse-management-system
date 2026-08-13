@@ -20,7 +20,7 @@ public class DataInitializer implements CommandLineRunner {
     private final ReceiptSeeder receiptSeeder;
     private final IssueSeeder issueSeeder;
     private final StocktakingSeeder stocktakingSeeder;
-    private final FinishedProductSeeder finishedProductSeeder;
+    private final ProductSeeder productSeeder;
 
     @Override
     public void run(String @NonNull ... args) {
@@ -38,6 +38,6 @@ public class DataInitializer implements CommandLineRunner {
         receiptSeeder.seed();
         issueSeeder.seed();
         stocktakingSeeder.seed();
-        finishedProductSeeder.seed();
+        productSeeder.seed();
     }
 }
