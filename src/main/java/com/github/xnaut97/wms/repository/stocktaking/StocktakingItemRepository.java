@@ -20,6 +20,11 @@ public interface StocktakingItemRepository
             Long materialId
     );
 
+    boolean existsByStocktakingIdAndProductId(
+            Long stocktakingId,
+            Long productId
+    );
+
     @Query("""
             SELECT COALESCE(SUM(i.varianceQuantity),0)
             FROM StocktakingItem i

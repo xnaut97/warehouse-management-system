@@ -1,5 +1,6 @@
 package com.github.xnaut97.wms.dto.stocktaking;
 
+import com.github.xnaut97.wms.enums.StocktakingType;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,6 +16,10 @@ public class StocktakingRequest {
 
     @NotNull
     private LocalDate stocktakingDate;
+
+    private StocktakingType type;
+
+    private Long stocktakerId;
 
     private String note;
 
