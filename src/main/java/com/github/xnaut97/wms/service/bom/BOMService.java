@@ -139,6 +139,8 @@ public class BOMService {
 
         bom.getItems().clear();
 
+        repository.saveAndFlush(bom);
+
         for (BOMItemRequest itemRequest : request.getItems()) {
 
             Material material =
