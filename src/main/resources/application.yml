@@ -29,7 +29,6 @@ spring:
 
 
 cors:
-  # Comma-separated list, overridable in production via CORS_ALLOWED_ORIGINS.
   allowed-origins: ${CORS_ALLOWED_ORIGINS:https://warehouse-management-rosy.vercel.app,http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}
 
 jwt:

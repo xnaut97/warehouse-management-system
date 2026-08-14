@@ -106,8 +106,6 @@ public class SecurityConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Patterns (not setAllowedOrigins) so entries such as
-        // https://*.vercel.app keep working together with credentials.
         configuration.setAllowedOriginPatterns(allowedOrigins);
 
         configuration.setAllowedMethods(
