@@ -27,7 +27,7 @@ public class Stocktaking extends BaseEntity {
     private LocalDate stocktakingDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar(32)")
     private StocktakingStatus status;
 
     @Enumerated(EnumType.STRING)

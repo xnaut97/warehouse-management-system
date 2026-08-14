@@ -11,11 +11,6 @@ import java.util.List;
 @ConfigurationProperties(prefix = "cors")
 public class CorsProperties {
 
-    /**
-     * Origins allowed to call the API. Exact origins or patterns
-     * (e.g. https://*.vercel.app). "*" is rejected because the API
-     * is served with credentials enabled.
-     */
     private List<String> allowedOrigins = List.of();
 
     private List<String> allowedMethods = List.of(
@@ -33,9 +28,6 @@ public class CorsProperties {
 
     private boolean allowCredentials = true;
 
-    /**
-     * How long (seconds) the browser may cache a preflight response.
-     */
     private long maxAge = 3600;
 
 }
