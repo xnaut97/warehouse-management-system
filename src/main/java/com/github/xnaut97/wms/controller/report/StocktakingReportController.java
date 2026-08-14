@@ -1,18 +1,23 @@
 package com.github.xnaut97.wms.controller.report;
 
 import com.github.xnaut97.wms.dto.common.ApiResponse;
+import com.github.xnaut97.wms.dto.report.stocktaking.StocktakingAccuracyReportResponse;
 import com.github.xnaut97.wms.dto.report.stocktaking.StocktakingReportResponse;
 import com.github.xnaut97.wms.dto.report.stocktaking.StocktakingSummaryReportResponse;
 import com.github.xnaut97.wms.dto.report.stocktaking.StocktakingVarianceReportResponse;
+import com.github.xnaut97.wms.service.report.StocktakingAccuracyReportService;
 import com.github.xnaut97.wms.service.report.StocktakingReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -21,6 +26,8 @@ import java.util.List;
 public class StocktakingReportController {
 
     private final StocktakingReportService service;
+
+    private final StocktakingAccuracyReportService accuracyService;
 
     @GetMapping
     @PreAuthorize("""
@@ -81,6 +88,39 @@ public class StocktakingReportController {
                 "Summary retrieved successfully",
 
                 service.getSummary()
+
+        );
+
+    }
+
+    @GetMapping("/accuracy")
+    @PreAuthorize("""
+            hasAnyRole(
+            'ADMIN',
+            'WAREHOUSE_MANAGER',
+            'EXECUTIVE_BOARD'
+            )
+            """)
+    public ApiResponse<StocktakingAccuracyReportResponse> accuracy(
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate fromDate,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate toDate,
+
+            @RequestParam(required = false)
+            Long warehouseId
+
+    ) {
+
+        return ApiResponse.success(
+
+                "Stocktaking accuracy report retrieved successfully",
+
+                accuracyService.getReport(fromDate, toDate, warehouseId)
 
         );
 
