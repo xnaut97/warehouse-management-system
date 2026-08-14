@@ -1,9 +1,11 @@
 package com.github.xnaut97.wms.security;
 
+import com.github.xnaut97.wms.config.CorsProperties;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
@@ -28,6 +30,8 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
 
+    private final CorsProperties corsProperties;
+
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
@@ -51,6 +55,9 @@ public class SecurityConfig {
 
                 )
                 .authorizeHttpRequests(auth -> auth
+
+                        .requestMatchers(HttpMethod.OPTIONS, "/**")
+                        .permitAll()
 
                         .requestMatchers(
                                 "/api/auth/**",
@@ -85,32 +92,43 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
+        List<String> allowedOrigins = corsProperties.getAllowedOrigins();
+
+        if (allowedOrigins.isEmpty() || allowedOrigins.contains("*")) {
+
+            throw new IllegalStateException(
+                    "cors.allowed-origins must list explicit origins "
+                            + "(CORS_ALLOWED_ORIGINS); \"*\" is not allowed "
+                            + "because credentials are enabled"
+            );
+
+        }
+
         CorsConfiguration configuration = new CorsConfiguration();
 
-//        configuration.setAllowedOrigins(
-//                List.of("http://localhost:5173")
-//        );
-
-        configuration.setAllowedOriginPatterns(List.of("*"));
-        configuration.setAllowedMethods(List.of("*"));
-        configuration.setAllowedHeaders(List.of("*"));
+        // Patterns (not setAllowedOrigins) so entries such as
+        // https://*.vercel.app keep working together with credentials.
+        configuration.setAllowedOriginPatterns(allowedOrigins);
 
         configuration.setAllowedMethods(
-                List.of(
-                        "GET",
-                        "POST",
-                        "PUT",
-                        "DELETE",
-                        "PATCH",
-                        "OPTIONS"
-                )
+                corsProperties.getAllowedMethods()
         );
 
         configuration.setAllowedHeaders(
-                List.of("*")
+                corsProperties.getAllowedHeaders()
         );
 
-        configuration.setAllowCredentials(true);
+        configuration.setExposedHeaders(
+                corsProperties.getExposedHeaders()
+        );
+
+        configuration.setAllowCredentials(
+                corsProperties.isAllowCredentials()
+        );
+
+        configuration.setMaxAge(
+                corsProperties.getMaxAge()
+        );
 
 
         UrlBasedCorsConfigurationSource source =
