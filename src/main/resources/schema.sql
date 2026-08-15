@@ -21,3 +21,10 @@ SET @stmt := IF(@stocktaking_item_material_required > 0, 'ALTER TABLE stocktakin
 PREPARE stocktaking_item_material_relax FROM @stmt;
 EXECUTE stocktaking_item_material_relax;
 DEALLOCATE PREPARE stocktaking_item_material_relax;
+
+SET @stocktaking_item_physical_required := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'stocktaking_item' AND COLUMN_NAME = 'physical_quantity' AND IS_NULLABLE = 'NO');
+
+SET @stmt := IF(@stocktaking_item_physical_required > 0, 'ALTER TABLE stocktaking_item MODIFY COLUMN physical_quantity DECIMAL(18,2) NULL', 'SELECT 1');
+PREPARE stocktaking_item_physical_relax FROM @stmt;
+EXECUTE stocktaking_item_physical_relax;
+DEALLOCATE PREPARE stocktaking_item_physical_relax;

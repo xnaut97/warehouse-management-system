@@ -136,11 +136,15 @@ public class StocktakingController {
             """)
     public ApiResponse<Void> confirm(
 
-            @PathVariable Long id
+            @PathVariable Long id,
+
+            @RequestBody(required = false)
+            @Valid
+            SaveStocktakingCountRequest request
 
     ) {
 
-        service.confirm(id);
+        service.confirm(id, request);
 
         return ApiResponse.success(
                 "Stocktaking confirmed successfully"

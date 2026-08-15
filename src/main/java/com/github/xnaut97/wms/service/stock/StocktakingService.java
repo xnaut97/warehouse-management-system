@@ -42,7 +42,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -231,7 +236,132 @@ public class StocktakingService {
 
         repository.save(stocktaking);
 
+        populateItems(stocktaking);
+
         return map(stocktaking);
+
+    }
+
+    private void populateItems(Stocktaking stocktaking) {
+
+        if (resolveGroup(stocktaking.getWarehouse()) == StockGroup.PRODUCT) {
+
+            populateProductItems(stocktaking);
+
+            return;
+
+        }
+
+        populateMaterialItems(stocktaking);
+
+    }
+
+    private void populateMaterialItems(Stocktaking stocktaking) {
+
+        List<MaterialInventory> inventories = materialInventoryRepository
+                .findAllByWarehouseIdOrderByMaterialCodeAsc(
+                        stocktaking.getWarehouse().getId()
+                );
+
+        for (MaterialInventory inventory : inventories) {
+
+            StocktakingItem item = new StocktakingItem();
+
+            item.setStocktaking(stocktaking);
+
+            item.setMaterial(
+                    inventory.getMaterial()
+            );
+
+            item.setItemGroup(StockGroup.MATERIAL);
+
+            item.setSystemQuantity(
+                    inventory.getQuantity()
+            );
+
+            applyPhysicalQuantity(item, null);
+
+            itemRepository.save(item);
+
+        }
+
+    }
+
+    private void populateProductItems(Stocktaking stocktaking) {
+
+        List<ProductInventory> inventories = productInventoryRepository
+                .findAllByWarehouseIdOrderByProductCodeAscLotNumberAsc(
+                        stocktaking.getWarehouse().getId()
+                );
+
+        Map<Long, StocktakingItem> itemsByProduct = new LinkedHashMap<>();
+
+        for (ProductInventory inventory : inventories) {
+
+            Product product = inventory.getProduct();
+
+            StocktakingItem item = itemsByProduct.get(product.getId());
+
+            if (item == null) {
+
+                item = new StocktakingItem();
+
+                item.setStocktaking(stocktaking);
+
+                item.setProduct(product);
+
+                item.setItemGroup(StockGroup.PRODUCT);
+
+                item.setSystemQuantity(BigDecimal.ZERO);
+
+                applyPhysicalQuantity(item, null);
+
+                itemsByProduct.put(product.getId(), item);
+
+            }
+
+            item.setSystemQuantity(
+                    item.getSystemQuantity().add(
+                            inventory.getQuantity()
+                    )
+            );
+
+            itemRepository.save(item);
+
+            createBatch(item, inventory);
+
+        }
+
+    }
+
+    private void createBatch(
+            StocktakingItem item,
+            ProductInventory inventory
+    ) {
+
+        StocktakingItemBatch batch = new StocktakingItemBatch();
+
+        batch.setItem(item);
+
+        batch.setProductInventory(inventory);
+
+        batch.setLotNumber(
+                inventory.getLotNumber()
+        );
+
+        batch.setExpirationDate(
+                inventory.getExpirationDate()
+        );
+
+        batch.setSystemQuantity(
+                inventory.getQuantity()
+        );
+
+        batch.setPhysicalQuantity(null);
+
+        batch.setVarianceQuantity(BigDecimal.ZERO);
+
+        batchRepository.save(batch);
 
     }
 
@@ -314,9 +444,7 @@ public class StocktakingService {
 
         applyPhysicalQuantity(
                 item,
-                request.getPhysicalQuantity() != null
-                        ? request.getPhysicalQuantity()
-                        : BigDecimal.ZERO
+                request.getPhysicalQuantity()
         );
 
         return itemRepository.save(item);
@@ -379,39 +507,13 @@ public class StocktakingService {
                 request.getReason()
         );
 
-        applyPhysicalQuantity(item, BigDecimal.ZERO);
+        applyPhysicalQuantity(item, null);
 
         itemRepository.save(item);
 
         for (ProductInventory inventory : inventories) {
 
-            StocktakingItemBatch batch = new StocktakingItemBatch();
-
-            batch.setItem(item);
-
-            batch.setProductInventory(inventory);
-
-            batch.setLotNumber(
-                    inventory.getLotNumber()
-            );
-
-            batch.setExpirationDate(
-                    inventory.getExpirationDate()
-            );
-
-            batch.setSystemQuantity(
-                    inventory.getQuantity()
-            );
-
-            batch.setPhysicalQuantity(null);
-
-            batch.setVarianceQuantity(
-                    BigDecimal.ZERO.subtract(
-                            inventory.getQuantity()
-                    )
-            );
-
-            batchRepository.save(batch);
+            createBatch(item, inventory);
 
         }
 
@@ -493,18 +595,31 @@ public class StocktakingService {
 
         batchRepository.save(batch);
 
-        BigDecimal physicalQuantity =
-                batchRepository.findByItemId(item.getId())
-                        .stream()
-                        .map(StocktakingItemBatch::getPhysicalQuantity)
-                        .filter(quantity -> quantity != null)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        applyPhysicalQuantity(item, physicalQuantity);
-
-        itemRepository.save(item);
+        rollUpBatches(item);
 
         return map(item);
+
+    }
+
+    private void rollUpBatches(StocktakingItem item) {
+
+        List<StocktakingItemBatch> batches =
+                batchRepository.findByItemId(item.getId());
+
+        boolean incomplete = batches.isEmpty()
+                || batches.stream()
+                .anyMatch(batch -> batch.getPhysicalQuantity() == null);
+
+        applyPhysicalQuantity(
+                item,
+                incomplete
+                        ? null
+                        : batches.stream()
+                        .map(StocktakingItemBatch::getPhysicalQuantity)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+        );
+
+        itemRepository.save(item);
 
     }
 
@@ -513,9 +628,18 @@ public class StocktakingService {
             entity = "Stocktaking"
     )
     @Transactional
-    public void confirm(Long stocktakingId) {
+    public void confirm(
+            Long stocktakingId,
+            SaveStocktakingCountRequest request
+    ) {
 
         Stocktaking stocktaking = findById(stocktakingId);
+
+        if (stocktaking.getStatus() == StocktakingStatus.STOCK_BALANCED) {
+            throw new BusinessException(
+                    "Phiếu kiểm kho đã được cân bằng tồn kho."
+            );
+        }
 
         if (stocktaking.getStatus() != StocktakingStatus.IN_PROGRESS) {
             throw new BusinessException(
@@ -532,22 +656,38 @@ public class StocktakingService {
             );
         }
 
+        if (request != null) {
+
+            saveCount(stocktakingId, items, request);
+
+            items = itemRepository.findByStocktakingId(stocktakingId);
+
+        }
+
         for (StocktakingItem item : items) {
 
-            if (!isBatchManaged(item)) {
+            if (isBatchManaged(item)) {
+
+                List<StocktakingItemBatch> batches =
+                        batchRepository.findByItemId(item.getId());
+
+                boolean incomplete = batches.isEmpty()
+                        || batches.stream()
+                        .anyMatch(batch -> batch.getPhysicalQuantity() == null);
+
+                if (incomplete) {
+                    throw new BusinessException(
+                            "Vui lòng nhập số lượng thực tế cho tất cả các lô."
+                    );
+                }
+
                 continue;
+
             }
 
-            List<StocktakingItemBatch> batches =
-                    batchRepository.findByItemId(item.getId());
-
-            boolean incomplete = batches.isEmpty()
-                    || batches.stream()
-                    .anyMatch(batch -> batch.getPhysicalQuantity() == null);
-
-            if (incomplete) {
+            if (item.getPhysicalQuantity() == null) {
                 throw new BusinessException(
-                        "Vui lòng nhập số lượng thực tế cho tất cả các lô."
+                        "Vui lòng nhập số lượng thực tế cho tất cả các dòng hàng."
                 );
             }
 
@@ -558,6 +698,112 @@ public class StocktakingService {
         );
 
         repository.save(stocktaking);
+
+    }
+
+    private void saveCount(
+
+            Long stocktakingId,
+
+            List<StocktakingItem> items,
+
+            SaveStocktakingCountRequest request
+
+    ) {
+
+        Map<Long, StocktakingItem> itemsById = items.stream()
+                .collect(Collectors.toMap(
+                        StocktakingItem::getId,
+                        item -> item
+                ));
+
+        Set<Long> touchedItemIds = new LinkedHashSet<>();
+
+        if (request.getBatches() != null) {
+
+            Map<Long, StocktakingItemBatch> batchesById =
+                    batchRepository.findByItemStocktakingId(stocktakingId)
+                            .stream()
+                            .collect(Collectors.toMap(
+                                    StocktakingItemBatch::getId,
+                                    batch -> batch
+                            ));
+
+            for (StocktakingCountLineRequest line : request.getBatches()) {
+
+                StocktakingItemBatch batch = batchesById.get(line.getId());
+
+                if (batch == null) {
+                    throw new BusinessException(
+                            "Không tìm thấy lô hàng của phiếu kiểm kho."
+                    );
+                }
+
+                batch.setPhysicalQuantity(
+                        line.getPhysicalQuantity()
+                );
+
+                batch.setVarianceQuantity(
+                        line.getPhysicalQuantity() == null
+                                ? BigDecimal.ZERO
+                                : line.getPhysicalQuantity()
+                                .subtract(batch.getSystemQuantity())
+                );
+
+                batch.setReason(
+                        line.getReason()
+                );
+
+                batchRepository.save(batch);
+
+                touchedItemIds.add(
+                        batch.getItem().getId()
+                );
+
+            }
+
+        }
+
+        if (request.getItems() != null) {
+
+            for (StocktakingCountLineRequest line : request.getItems()) {
+
+                StocktakingItem item = itemsById.get(line.getId());
+
+                if (item == null) {
+                    throw new BusinessException(
+                            "Không tìm thấy dòng phiếu kiểm kho."
+                    );
+                }
+
+                item.setReason(
+                        line.getReason()
+                );
+
+                if (isBatchManaged(item)) {
+
+                    itemRepository.save(item);
+
+                    continue;
+
+                }
+
+                applyPhysicalQuantity(
+                        item,
+                        line.getPhysicalQuantity()
+                );
+
+                itemRepository.save(item);
+
+            }
+
+        }
+
+        for (Long itemId : touchedItemIds) {
+
+            rollUpBatches(itemsById.get(itemId));
+
+        }
 
     }
 
@@ -621,6 +867,14 @@ public class StocktakingService {
 
     ) {
 
+        if (item.getPhysicalQuantity() == null) {
+
+            throw new BusinessException(
+                    "Vui lòng nhập số lượng thực tế cho tất cả các dòng hàng."
+            );
+
+        }
+
         MaterialInventory materialInventory = materialInventoryRepository
 
                 .findByWarehouseIdAndMaterialId(
@@ -639,6 +893,17 @@ public class StocktakingService {
 
                 );
 
+        item.setSystemQuantity(
+                materialInventory.getQuantity()
+        );
+
+        applyPhysicalQuantity(
+                item,
+                item.getPhysicalQuantity()
+        );
+
+        itemRepository.save(item);
+
         materialInventory.setQuantity(
                 item.getPhysicalQuantity()
         );
@@ -654,6 +919,16 @@ public class StocktakingService {
         List<StocktakingItemBatch> batches =
                 batchRepository.findByItemId(item.getId());
 
+        if (batches.isEmpty()) {
+
+            throw new BusinessException(
+                    "Vui lòng nhập số lượng thực tế cho tất cả các lô."
+            );
+
+        }
+
+        BigDecimal systemQuantity = BigDecimal.ZERO;
+
         for (StocktakingItemBatch batch : batches) {
 
             if (batch.getPhysicalQuantity() == null) {
@@ -666,6 +941,21 @@ public class StocktakingService {
 
             ProductInventory inventory = batch.getProductInventory();
 
+            batch.setSystemQuantity(
+                    inventory.getQuantity()
+            );
+
+            batch.setVarianceQuantity(
+                    batch.getPhysicalQuantity()
+                            .subtract(inventory.getQuantity())
+            );
+
+            batchRepository.save(batch);
+
+            systemQuantity = systemQuantity.add(
+                    inventory.getQuantity()
+            );
+
             inventory.setQuantity(
                     batch.getPhysicalQuantity()
             );
@@ -673,6 +963,17 @@ public class StocktakingService {
             productInventoryRepository.save(inventory);
 
         }
+
+        item.setSystemQuantity(systemQuantity);
+
+        applyPhysicalQuantity(
+                item,
+                batches.stream()
+                        .map(StocktakingItemBatch::getPhysicalQuantity)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+        );
+
+        itemRepository.save(item);
 
     }
 
@@ -727,10 +1028,20 @@ public class StocktakingService {
 
     ) {
 
+        item.setPhysicalQuantity(physicalQuantity);
+
+        if (physicalQuantity == null) {
+
+            item.setVarianceQuantity(BigDecimal.ZERO);
+
+            item.setItemStatus(null);
+
+            return;
+
+        }
+
         BigDecimal variance =
                 physicalQuantity.subtract(item.getSystemQuantity());
-
-        item.setPhysicalQuantity(physicalQuantity);
 
         item.setVarianceQuantity(variance);
 

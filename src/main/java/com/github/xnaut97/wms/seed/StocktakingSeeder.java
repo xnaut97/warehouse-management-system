@@ -1,9 +1,9 @@
 package com.github.xnaut97.wms.seed;
 
-import com.github.xnaut97.wms.dto.stocktaking.AddStocktakingItemRequest;
+import com.github.xnaut97.wms.dto.stocktaking.SaveStocktakingCountRequest;
+import com.github.xnaut97.wms.dto.stocktaking.StocktakingCountLineRequest;
 import com.github.xnaut97.wms.dto.stocktaking.StocktakingRequest;
 import com.github.xnaut97.wms.entity.common.Warehouse;
-import com.github.xnaut97.wms.entity.material.Material;
 import com.github.xnaut97.wms.enums.StocktakingType;
 import com.github.xnaut97.wms.repository.MaterialRepository;
 import com.github.xnaut97.wms.repository.WarehouseRepository;
@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -41,8 +40,6 @@ public class StocktakingSeeder {
 
         ThreadLocalRandom random =
                 ThreadLocalRandom.current();
-
-        List<Material> materials = materialRepository.findAll();
 
         for (int i = 0; i < 3; i++) {
 
@@ -77,19 +74,37 @@ public class StocktakingSeeder {
 
             Long stocktakingId = stocktakingService.create(request).getId();
 
-            int randomItems = random.nextInt(1, materials.size() + 1);
+            SaveStocktakingCountRequest countRequest =
+                    new SaveStocktakingCountRequest();
 
-            for (int j = 0; j < randomItems; j++) {
-                Material material = materials.get(j);
-                AddStocktakingItemRequest addItemRequest = new AddStocktakingItemRequest();
+            countRequest.setItems(
+                    stocktakingService.getById(stocktakingId)
+                            .getItems()
+                            .stream()
+                            .map(item -> {
 
-                addItemRequest.setMaterialId(material.getId());
-                addItemRequest.setPhysicalQuantity(new BigDecimal(random.nextInt(100, 1000)));
+                                StocktakingCountLineRequest line =
+                                        new StocktakingCountLineRequest();
 
-                stocktakingService.addItem(stocktakingId, addItemRequest);
+                                line.setId(item.getId());
+
+                                line.setPhysicalQuantity(
+                                        new BigDecimal(
+                                                random.nextInt(100, 1000)
+                                        )
+                                );
+
+                                return line;
+
+                            })
+                            .toList()
+            );
+
+            if (countRequest.getItems().isEmpty()) {
+                continue;
             }
 
-            stocktakingService.confirm(stocktakingId);
+            stocktakingService.confirm(stocktakingId, countRequest);
 
             stocktakingService.balance(stocktakingId);
 

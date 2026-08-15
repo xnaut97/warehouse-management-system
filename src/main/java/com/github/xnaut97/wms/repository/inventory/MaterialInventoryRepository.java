@@ -22,6 +22,10 @@ public interface MaterialInventoryRepository extends
             Long materialId
     );
 
+    List<MaterialInventory> findAllByWarehouseIdOrderByMaterialCodeAsc(
+            Long warehouseId
+    );
+
     @Query("""
             SELECT COALESCE(SUM(i.quantity),0)
             FROM MaterialInventory i

@@ -21,6 +21,10 @@ public interface ProductInventoryRepository
             Long productId
     );
 
+    List<ProductInventory> findAllByWarehouseIdOrderByProductCodeAscLotNumberAsc(
+            Long warehouseId
+    );
+
     @Query("""
             SELECT COALESCE(SUM(i.quantity * i.product.averagePrice),0)
             FROM ProductInventory i
