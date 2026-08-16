@@ -2,6 +2,8 @@ package com.github.xnaut97.wms.controller.report;
 
 import com.github.xnaut97.wms.dto.common.ApiResponse;
 import com.github.xnaut97.wms.dto.report.operation.OperationReportResponse;
+import com.github.xnaut97.wms.dto.report.operation.StockSummaryReportResponse;
+import com.github.xnaut97.wms.enums.StockGroup;
 import com.github.xnaut97.wms.service.report.OperationReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -45,6 +47,39 @@ public class OperationReportController {
                 "Operation report retrieved successfully",
 
                 service.getReport(fromDate, toDate)
+
+        );
+
+    }
+
+    @GetMapping("/stock-summary")
+    @PreAuthorize("""
+            hasAnyRole(
+            'ADMIN',
+            'WAREHOUSE_MANAGER',
+            'EXECUTIVE_BOARD'
+            )
+            """)
+    public ApiResponse<StockSummaryReportResponse> stockSummary(
+
+            @RequestParam(required = false)
+            StockGroup stockGroup,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate fromDate,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate toDate
+
+    ) {
+
+        return ApiResponse.success(
+
+                "Stock summary report retrieved successfully",
+
+                service.getStockSummary(stockGroup, fromDate, toDate)
 
         );
 

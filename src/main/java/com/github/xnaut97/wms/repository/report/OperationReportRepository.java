@@ -3,6 +3,8 @@ package com.github.xnaut97.wms.repository.report;
 import com.github.xnaut97.wms.dto.report.operation.DocumentDateCountResponse;
 import com.github.xnaut97.wms.dto.report.operation.MaterialQuantityResponse;
 import com.github.xnaut97.wms.dto.report.operation.MonthlyCountResponse;
+import com.github.xnaut97.wms.dto.report.operation.OperationDocumentResponse;
+import com.github.xnaut97.wms.dto.report.operation.OperationQuantityResponse;
 import com.github.xnaut97.wms.entity.goods.GoodsIssue;
 import com.github.xnaut97.wms.enums.IssueStatus;
 import com.github.xnaut97.wms.enums.ReceiptStatus;
@@ -242,6 +244,301 @@ public interface OperationReportRepository
             """)
     List<DocumentDateCountResponse> getProductIssueCountByDate(
             @Param("status") IssueStatus status,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate
+    );
+
+
+    @Query("""
+            SELECT new com.github.xnaut97.wms.dto.report.operation.OperationQuantityResponse(
+                m.id,
+                m.code,
+                m.name,
+                m.unit,
+                COALESCE(SUM(inv.quantity),0)
+            )
+            FROM MaterialInventory inv
+            JOIN inv.material m
+            WHERE inv.warehouse.id = :warehouseId
+            GROUP BY m.id, m.code, m.name, m.unit
+            """)
+    List<OperationQuantityResponse> getMaterialCurrentStock(
+            @Param("warehouseId") Long warehouseId
+    );
+
+    @Query("""
+            SELECT new com.github.xnaut97.wms.dto.report.operation.OperationQuantityResponse(
+                p.id,
+                p.code,
+                p.name,
+                p.unit,
+                COALESCE(SUM(inv.quantity),0)
+            )
+            FROM ProductInventory inv
+            JOIN inv.product p
+            WHERE inv.warehouse.id = :warehouseId
+            GROUP BY p.id, p.code, p.name, p.unit
+            """)
+    List<OperationQuantityResponse> getProductCurrentStock(
+            @Param("warehouseId") Long warehouseId
+    );
+
+    @Query("""
+            SELECT new com.github.xnaut97.wms.dto.report.operation.OperationQuantityResponse(
+                m.id,
+                m.code,
+                m.name,
+                m.unit,
+                COALESCE(SUM(i.quantity),0)
+            )
+            FROM GoodsReceiptItem i
+            JOIN i.receipt r
+            JOIN i.material m
+            WHERE r.status = :status
+              AND r.warehouse.id = :warehouseId
+              AND r.receiptDate BETWEEN :fromDate AND :toDate
+            GROUP BY m.id, m.code, m.name, m.unit
+            """)
+    List<OperationQuantityResponse> getMaterialReceiptQuantities(
+            @Param("status") ReceiptStatus status,
+            @Param("warehouseId") Long warehouseId,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate
+    );
+
+    @Query("""
+            SELECT new com.github.xnaut97.wms.dto.report.operation.OperationQuantityResponse(
+                m.id,
+                m.code,
+                m.name,
+                m.unit,
+                COALESCE(SUM(i.quantity),0)
+            )
+            FROM GoodsReceiptItem i
+            JOIN i.receipt r
+            JOIN i.material m
+            WHERE r.status = :status
+              AND r.warehouse.id = :warehouseId
+              AND r.receiptDate > :date
+            GROUP BY m.id, m.code, m.name, m.unit
+            """)
+    List<OperationQuantityResponse> getMaterialReceiptQuantitiesAfter(
+            @Param("status") ReceiptStatus status,
+            @Param("warehouseId") Long warehouseId,
+            @Param("date") LocalDate date
+    );
+
+    @Query("""
+            SELECT new com.github.xnaut97.wms.dto.report.operation.OperationQuantityResponse(
+                m.id,
+                m.code,
+                m.name,
+                m.unit,
+                COALESCE(SUM(i.quantity),0)
+            )
+            FROM GoodsIssueItem i
+            JOIN i.issue g
+            JOIN i.material m
+            WHERE g.status = :status
+              AND g.warehouse.id = :warehouseId
+              AND g.issueDate BETWEEN :fromDate AND :toDate
+            GROUP BY m.id, m.code, m.name, m.unit
+            """)
+    List<OperationQuantityResponse> getMaterialIssueQuantities(
+            @Param("status") IssueStatus status,
+            @Param("warehouseId") Long warehouseId,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate
+    );
+
+    @Query("""
+            SELECT new com.github.xnaut97.wms.dto.report.operation.OperationQuantityResponse(
+                m.id,
+                m.code,
+                m.name,
+                m.unit,
+                COALESCE(SUM(i.quantity),0)
+            )
+            FROM GoodsIssueItem i
+            JOIN i.issue g
+            JOIN i.material m
+            WHERE g.status = :status
+              AND g.warehouse.id = :warehouseId
+              AND g.issueDate > :date
+            GROUP BY m.id, m.code, m.name, m.unit
+            """)
+    List<OperationQuantityResponse> getMaterialIssueQuantitiesAfter(
+            @Param("status") IssueStatus status,
+            @Param("warehouseId") Long warehouseId,
+            @Param("date") LocalDate date
+    );
+
+    @Query("""
+            SELECT new com.github.xnaut97.wms.dto.report.operation.OperationQuantityResponse(
+                p.id,
+                p.code,
+                p.name,
+                p.unit,
+                COALESCE(SUM(i.quantity),0)
+            )
+            FROM ProductReceiptItem i
+            JOIN i.receipt r
+            JOIN i.product p
+            WHERE r.status = :status
+              AND r.warehouse.id = :warehouseId
+              AND r.receiptDate BETWEEN :fromDate AND :toDate
+            GROUP BY p.id, p.code, p.name, p.unit
+            """)
+    List<OperationQuantityResponse> getProductReceiptQuantities(
+            @Param("status") ReceiptStatus status,
+            @Param("warehouseId") Long warehouseId,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate
+    );
+
+    @Query("""
+            SELECT new com.github.xnaut97.wms.dto.report.operation.OperationQuantityResponse(
+                p.id,
+                p.code,
+                p.name,
+                p.unit,
+                COALESCE(SUM(i.quantity),0)
+            )
+            FROM ProductReceiptItem i
+            JOIN i.receipt r
+            JOIN i.product p
+            WHERE r.status = :status
+              AND r.warehouse.id = :warehouseId
+              AND r.receiptDate > :date
+            GROUP BY p.id, p.code, p.name, p.unit
+            """)
+    List<OperationQuantityResponse> getProductReceiptQuantitiesAfter(
+            @Param("status") ReceiptStatus status,
+            @Param("warehouseId") Long warehouseId,
+            @Param("date") LocalDate date
+    );
+
+    @Query("""
+            SELECT new com.github.xnaut97.wms.dto.report.operation.OperationQuantityResponse(
+                p.id,
+                p.code,
+                p.name,
+                p.unit,
+                COALESCE(SUM(i.quantity),0)
+            )
+            FROM ProductIssueItem i
+            JOIN i.issue g
+            JOIN i.product p
+            WHERE g.status = :status
+              AND g.warehouse.id = :warehouseId
+              AND g.issueDate BETWEEN :fromDate AND :toDate
+            GROUP BY p.id, p.code, p.name, p.unit
+            """)
+    List<OperationQuantityResponse> getProductIssueQuantities(
+            @Param("status") IssueStatus status,
+            @Param("warehouseId") Long warehouseId,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate
+    );
+
+    @Query("""
+            SELECT new com.github.xnaut97.wms.dto.report.operation.OperationQuantityResponse(
+                p.id,
+                p.code,
+                p.name,
+                p.unit,
+                COALESCE(SUM(i.quantity),0)
+            )
+            FROM ProductIssueItem i
+            JOIN i.issue g
+            JOIN i.product p
+            WHERE g.status = :status
+              AND g.warehouse.id = :warehouseId
+              AND g.issueDate > :date
+            GROUP BY p.id, p.code, p.name, p.unit
+            """)
+    List<OperationQuantityResponse> getProductIssueQuantitiesAfter(
+            @Param("status") IssueStatus status,
+            @Param("warehouseId") Long warehouseId,
+            @Param("date") LocalDate date
+    );
+
+    @Query("""
+            SELECT DISTINCT new com.github.xnaut97.wms.dto.report.operation.OperationDocumentResponse(
+                i.material.id,
+                r.id,
+                r.receiptNo,
+                r.receiptDate
+            )
+            FROM GoodsReceiptItem i
+            JOIN i.receipt r
+            WHERE r.status = :status
+              AND r.warehouse.id = :warehouseId
+              AND r.receiptDate BETWEEN :fromDate AND :toDate
+            """)
+    List<OperationDocumentResponse> getMaterialReceiptDocuments(
+            @Param("status") ReceiptStatus status,
+            @Param("warehouseId") Long warehouseId,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate
+    );
+
+    @Query("""
+            SELECT DISTINCT new com.github.xnaut97.wms.dto.report.operation.OperationDocumentResponse(
+                i.material.id,
+                g.id,
+                g.issueNo,
+                g.issueDate
+            )
+            FROM GoodsIssueItem i
+            JOIN i.issue g
+            WHERE g.status = :status
+              AND g.warehouse.id = :warehouseId
+              AND g.issueDate BETWEEN :fromDate AND :toDate
+            """)
+    List<OperationDocumentResponse> getMaterialIssueDocuments(
+            @Param("status") IssueStatus status,
+            @Param("warehouseId") Long warehouseId,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate
+    );
+
+    @Query("""
+            SELECT DISTINCT new com.github.xnaut97.wms.dto.report.operation.OperationDocumentResponse(
+                i.product.id,
+                r.id,
+                r.receiptNo,
+                r.receiptDate
+            )
+            FROM ProductReceiptItem i
+            JOIN i.receipt r
+            WHERE r.status = :status
+              AND r.warehouse.id = :warehouseId
+              AND r.receiptDate BETWEEN :fromDate AND :toDate
+            """)
+    List<OperationDocumentResponse> getProductReceiptDocuments(
+            @Param("status") ReceiptStatus status,
+            @Param("warehouseId") Long warehouseId,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate
+    );
+
+    @Query("""
+            SELECT DISTINCT new com.github.xnaut97.wms.dto.report.operation.OperationDocumentResponse(
+                i.product.id,
+                g.id,
+                g.issueNo,
+                g.issueDate
+            )
+            FROM ProductIssueItem i
+            JOIN i.issue g
+            WHERE g.status = :status
+              AND g.warehouse.id = :warehouseId
+              AND g.issueDate BETWEEN :fromDate AND :toDate
+            """)
+    List<OperationDocumentResponse> getProductIssueDocuments(
+            @Param("status") IssueStatus status,
+            @Param("warehouseId") Long warehouseId,
             @Param("fromDate") LocalDate fromDate,
             @Param("toDate") LocalDate toDate
     );

@@ -7,11 +7,21 @@ import com.github.xnaut97.wms.dto.report.operation.MaterialConsumptionComparison
 import com.github.xnaut97.wms.dto.report.operation.MaterialQuantityResponse;
 import com.github.xnaut97.wms.dto.report.operation.MaterialWasteRateResponse;
 import com.github.xnaut97.wms.dto.report.operation.MonthlyCountResponse;
+import com.github.xnaut97.wms.dto.report.operation.OperationDocumentResponse;
+import com.github.xnaut97.wms.dto.report.operation.OperationQuantityResponse;
 import com.github.xnaut97.wms.dto.report.operation.OperationReportResponse;
+import com.github.xnaut97.wms.dto.report.operation.StockSummaryReportResponse;
+import com.github.xnaut97.wms.dto.report.operation.StockSummaryRowResponse;
 import com.github.xnaut97.wms.dto.report.operation.WeekdayFrequencyResponse;
+import com.github.xnaut97.wms.entity.common.Warehouse;
+import com.github.xnaut97.wms.enums.DocumentType;
 import com.github.xnaut97.wms.enums.IssueStatus;
 import com.github.xnaut97.wms.enums.ReceiptStatus;
+import com.github.xnaut97.wms.enums.StockGroup;
+import com.github.xnaut97.wms.exception.BusinessException;
+import com.github.xnaut97.wms.repository.WarehouseRepository;
 import com.github.xnaut97.wms.repository.report.OperationReportRepository;
+import com.github.xnaut97.wms.service.warehouse.WarehouseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +48,8 @@ public class OperationReportService {
     private static final int SCALE = 2;
 
     private final OperationReportRepository repository;
+
+    private final WarehouseRepository warehouseRepository;
 
     @Transactional(readOnly = true)
     public OperationReportResponse getReport(
@@ -94,6 +106,312 @@ public class OperationReportService {
                 )
 
                 .build();
+
+    }
+
+    @Transactional(readOnly = true)
+    public StockSummaryReportResponse getStockSummary(
+            StockGroup stockGroup,
+            LocalDate fromDate,
+            LocalDate toDate
+    ) {
+
+        StockGroup resolvedGroup =
+                stockGroup != null
+                        ? stockGroup
+                        : StockGroup.MATERIAL;
+
+        LocalDate resolvedToDate =
+                toDate != null
+                        ? toDate
+                        : LocalDate.now();
+
+        LocalDate resolvedFromDate =
+                fromDate != null && !fromDate.isAfter(resolvedToDate)
+                        ? fromDate
+                        : YearMonth.from(resolvedToDate).atDay(1);
+
+        boolean material = resolvedGroup == StockGroup.MATERIAL;
+
+        Warehouse warehouse = warehouseRepository.findByCode(
+                material
+                        ? WarehouseService.MATERIAL_WAREHOUSE_CODE
+                        : WarehouseService.PRODUCT_WAREHOUSE_CODE
+        ).orElseThrow(() -> new BusinessException("Không tìm thấy kho"));
+
+        Long warehouseId = warehouse.getId();
+
+        List<OperationQuantityResponse> currentStock =
+                material
+                        ? repository.getMaterialCurrentStock(warehouseId)
+                        : repository.getProductCurrentStock(warehouseId);
+
+        List<OperationQuantityResponse> receipts =
+                material
+                        ? repository.getMaterialReceiptQuantities(
+                        ReceiptStatus.CONFIRMED,
+                        warehouseId,
+                        resolvedFromDate,
+                        resolvedToDate
+                )
+                        : repository.getProductReceiptQuantities(
+                        ReceiptStatus.CONFIRMED,
+                        warehouseId,
+                        resolvedFromDate,
+                        resolvedToDate
+                );
+
+        List<OperationQuantityResponse> issues =
+                material
+                        ? repository.getMaterialIssueQuantities(
+                        IssueStatus.CONFIRMED,
+                        warehouseId,
+                        resolvedFromDate,
+                        resolvedToDate
+                )
+                        : repository.getProductIssueQuantities(
+                        IssueStatus.CONFIRMED,
+                        warehouseId,
+                        resolvedFromDate,
+                        resolvedToDate
+                );
+
+        List<OperationQuantityResponse> receiptsAfter =
+                material
+                        ? repository.getMaterialReceiptQuantitiesAfter(
+                        ReceiptStatus.CONFIRMED,
+                        warehouseId,
+                        resolvedToDate
+                )
+                        : repository.getProductReceiptQuantitiesAfter(
+                        ReceiptStatus.CONFIRMED,
+                        warehouseId,
+                        resolvedToDate
+                );
+
+        List<OperationQuantityResponse> issuesAfter =
+                material
+                        ? repository.getMaterialIssueQuantitiesAfter(
+                        IssueStatus.CONFIRMED,
+                        warehouseId,
+                        resolvedToDate
+                )
+                        : repository.getProductIssueQuantitiesAfter(
+                        IssueStatus.CONFIRMED,
+                        warehouseId,
+                        resolvedToDate
+                );
+
+        Map<Long, List<OperationDocumentResponse>> documents =
+                groupDocuments(
+                        material,
+                        warehouseId,
+                        resolvedFromDate,
+                        resolvedToDate
+                );
+
+        Map<Long, OperationQuantityResponse> identity = new LinkedHashMap<>();
+
+        indexInto(identity, currentStock);
+        indexInto(identity, receipts);
+        indexInto(identity, issues);
+
+        Map<Long, BigDecimal> currentByItem = quantityByItem(currentStock);
+        Map<Long, BigDecimal> receiptByItem = quantityByItem(receipts);
+        Map<Long, BigDecimal> issueByItem = quantityByItem(issues);
+        Map<Long, BigDecimal> receiptAfterByItem = quantityByItem(receiptsAfter);
+        Map<Long, BigDecimal> issueAfterByItem = quantityByItem(issuesAfter);
+
+        List<StockSummaryRowResponse> rows = new ArrayList<>();
+
+        BigDecimal totalOpening = BigDecimal.ZERO;
+        BigDecimal totalReceipt = BigDecimal.ZERO;
+        BigDecimal totalIssue = BigDecimal.ZERO;
+        BigDecimal totalClosing = BigDecimal.ZERO;
+
+        for (Map.Entry<Long, OperationQuantityResponse> entry
+                : identity.entrySet()) {
+
+            Long itemId = entry.getKey();
+
+            BigDecimal receiptQuantity = valueOf(receiptByItem, itemId);
+
+            BigDecimal issueQuantity = valueOf(issueByItem, itemId);
+
+            BigDecimal closingQuantity = valueOf(currentByItem, itemId)
+                    .subtract(valueOf(receiptAfterByItem, itemId))
+                    .add(valueOf(issueAfterByItem, itemId));
+
+            BigDecimal openingQuantity = closingQuantity
+                    .subtract(receiptQuantity)
+                    .add(issueQuantity);
+
+            totalOpening = totalOpening.add(openingQuantity);
+            totalReceipt = totalReceipt.add(receiptQuantity);
+            totalIssue = totalIssue.add(issueQuantity);
+            totalClosing = totalClosing.add(closingQuantity);
+
+            rows.add(StockSummaryRowResponse.builder()
+                    .itemId(itemId)
+                    .code(entry.getValue().getCode())
+                    .name(entry.getValue().getName())
+                    .unit(entry.getValue().getUnit())
+                    .openingQuantity(scaled(openingQuantity))
+                    .receiptQuantity(scaled(receiptQuantity))
+                    .issueQuantity(scaled(issueQuantity))
+                    .closingQuantity(scaled(closingQuantity))
+                    .documents(
+                            documents.getOrDefault(itemId, List.of())
+                    )
+                    .build());
+
+        }
+
+        rows.sort(Comparator.comparing(
+                StockSummaryRowResponse::getCode,
+                Comparator.nullsLast(Comparator.naturalOrder())
+        ));
+
+        return StockSummaryReportResponse.builder()
+                .fromDate(resolvedFromDate)
+                .toDate(resolvedToDate)
+                .stockGroup(resolvedGroup)
+                .warehouseId(warehouseId)
+                .warehouseCode(warehouse.getCode())
+                .warehouseName(warehouse.getName())
+                .totalOpeningQuantity(scaled(totalOpening))
+                .totalReceiptQuantity(scaled(totalReceipt))
+                .totalIssueQuantity(scaled(totalIssue))
+                .totalClosingQuantity(scaled(totalClosing))
+                .items(rows)
+                .build();
+
+    }
+
+    private Map<Long, List<OperationDocumentResponse>> groupDocuments(
+            boolean material,
+            Long warehouseId,
+            LocalDate fromDate,
+            LocalDate toDate
+    ) {
+
+        List<OperationDocumentResponse> documents = new ArrayList<>();
+
+        if (material) {
+
+            documents.addAll(stamp(
+                    repository.getMaterialReceiptDocuments(
+                            ReceiptStatus.CONFIRMED,
+                            warehouseId,
+                            fromDate,
+                            toDate
+                    ),
+                    DocumentType.GOODS_RECEIPT
+            ));
+
+            documents.addAll(stamp(
+                    repository.getMaterialIssueDocuments(
+                            IssueStatus.CONFIRMED,
+                            warehouseId,
+                            fromDate,
+                            toDate
+                    ),
+                    DocumentType.GOODS_ISSUE
+            ));
+
+        } else {
+
+            documents.addAll(stamp(
+                    repository.getProductReceiptDocuments(
+                            ReceiptStatus.CONFIRMED,
+                            warehouseId,
+                            fromDate,
+                            toDate
+                    ),
+                    DocumentType.PRODUCT_RECEIPT
+            ));
+
+            documents.addAll(stamp(
+                    repository.getProductIssueDocuments(
+                            IssueStatus.CONFIRMED,
+                            warehouseId,
+                            fromDate,
+                            toDate
+                    ),
+                    DocumentType.PRODUCT_ISSUE
+            ));
+
+        }
+
+        documents.sort(
+                Comparator.comparing(
+                                OperationDocumentResponse::getDocumentDate,
+                                Comparator.nullsLast(Comparator.naturalOrder())
+                        )
+                        .thenComparing(
+                                OperationDocumentResponse::getDocumentNo,
+                                Comparator.nullsLast(Comparator.naturalOrder())
+                        )
+        );
+
+        Map<Long, List<OperationDocumentResponse>> result =
+                new LinkedHashMap<>();
+
+        documents.forEach(document ->
+                result.computeIfAbsent(
+                        document.getItemId(),
+                        key -> new ArrayList<>()
+                ).add(document)
+        );
+
+        return result;
+
+    }
+
+    private List<OperationDocumentResponse> stamp(
+            List<OperationDocumentResponse> documents,
+            DocumentType documentType
+    ) {
+
+        documents.forEach(document ->
+                document.setDocumentType(documentType)
+        );
+
+        return documents;
+
+    }
+
+    private void indexInto(
+            Map<Long, OperationQuantityResponse> target,
+            List<OperationQuantityResponse> rows
+    ) {
+
+        rows.forEach(row ->
+                target.putIfAbsent(row.getItemId(), row)
+        );
+
+    }
+
+    private Map<Long, BigDecimal> quantityByItem(
+            List<OperationQuantityResponse> rows
+    ) {
+
+        Map<Long, BigDecimal> result = new LinkedHashMap<>();
+
+        rows.forEach(row ->
+                result.put(row.getItemId(), orZero(row.getQuantity()))
+        );
+
+        return result;
+
+    }
+
+    private BigDecimal valueOf(
+            Map<Long, BigDecimal> source,
+            Long itemId
+    ) {
+
+        return orZero(source.get(itemId));
 
     }
 
