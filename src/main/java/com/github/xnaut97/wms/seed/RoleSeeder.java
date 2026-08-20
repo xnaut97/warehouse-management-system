@@ -17,10 +17,6 @@ public class RoleSeeder {
 
     @Transactional
     public void seed() {
-        if (repository.count() > 0) {
-            return;
-        }
-
         for (RoleType role : RoleType.values()) {
             if(repository.existsByRole(role))
                 continue;

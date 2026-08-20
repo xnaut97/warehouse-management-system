@@ -45,6 +45,13 @@ public class UserSeeder {
                         ),
 
                         factory.user(
+                                "accountant",
+                                "Accountant",
+                                "accountant@wms.com",
+                                roleRepository.findByRole(RoleType.ACCOUNTANT).orElseThrow()
+                        ),
+
+                        factory.user(
                                 "board",
                                 "Executive Board",
                                 "board@wms.com",

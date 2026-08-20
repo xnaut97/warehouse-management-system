@@ -26,7 +26,8 @@ public class StockCardController {
             'ADMIN',
             'WAREHOUSE_MANAGER',
             'WAREHOUSE_STAFF',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<StockCardResponse> getStockCard(

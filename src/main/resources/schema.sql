@@ -52,3 +52,10 @@ SET @stmt := IF(@products_category_exists > 0, 'UPDATE products SET category = '
 PREPARE products_category_keoc1 FROM @stmt;
 EXECUTE products_category_keoc1;
 DEALLOCATE PREPARE products_category_keoc1;
+
+SET @role_role_is_enum := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'role' AND COLUMN_NAME = 'role' AND DATA_TYPE = 'enum');
+
+SET @stmt := IF(@role_role_is_enum > 0, 'ALTER TABLE role MODIFY COLUMN role VARCHAR(32) NOT NULL', 'SELECT 1');
+PREPARE role_role_widen FROM @stmt;
+EXECUTE role_role_widen;
+DEALLOCATE PREPARE role_role_widen;

@@ -29,7 +29,8 @@ public class InventoryTransactionController {
                 'ADMIN',
                 'WAREHOUSE_MANAGER',
                 'WAREHOUSE_STAFF',
-                'EXECUTIVE_BOARD'
+                'EXECUTIVE_BOARD',
+                'ACCOUNTANT'
             )
             """)
     public ApiResponse<Page<InventoryTransactionResponse>> getAll(

@@ -20,7 +20,7 @@ public class IssueController {
     private final IssueService service;
 
     @GetMapping("/{issueId}/items")
-    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','EXECUTIVE_BOARD')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','EXECUTIVE_BOARD','ACCOUNTANT')")
     public ApiResponse<List<IssueItemResponse>> getItems(
             @PathVariable Long issueId
     ) {
@@ -109,7 +109,7 @@ public class IssueController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','EXECUTIVE_BOARD')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','EXECUTIVE_BOARD','ACCOUNTANT')")
     public ApiResponse<Page<IssueResponse>> getAll(
 
             Pageable pageable
@@ -127,7 +127,7 @@ public class IssueController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','EXECUTIVE_BOARD')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','EXECUTIVE_BOARD','ACCOUNTANT')")
     public ApiResponse<IssueDetailResponse> getDetail(
 
             @PathVariable

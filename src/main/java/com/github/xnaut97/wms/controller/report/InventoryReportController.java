@@ -29,7 +29,8 @@ public class InventoryReportController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<Page<InventoryReportResponse>> materialInventoryReport(
@@ -51,7 +52,8 @@ public class InventoryReportController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<Page<InventoryHistoryResponse>> inventoryHistoryReport(

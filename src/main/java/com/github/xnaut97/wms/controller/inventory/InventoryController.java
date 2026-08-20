@@ -26,7 +26,8 @@ public class InventoryController {
             'ADMIN',
             'WAREHOUSE_MANAGER',
             'WAREHOUSE_STAFF',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<List<LowStockResponse>> getLowStock() {
@@ -39,7 +40,7 @@ public class InventoryController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_STAFF','EXECUTIVE_BOARD')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_STAFF','EXECUTIVE_BOARD','ACCOUNTANT')")
     public ApiResponse<Page<InventoryResponse>> getAll(
 
             @RequestParam(required = false)
@@ -76,7 +77,7 @@ public class InventoryController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_STAFF','EXECUTIVE_BOARD')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_STAFF','EXECUTIVE_BOARD','ACCOUNTANT')")
     public ApiResponse<InventoryDetailResponse> getDetail(
             @PathVariable Long id
     ) {

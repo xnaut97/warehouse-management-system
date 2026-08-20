@@ -24,7 +24,8 @@ public class AlertController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<AlertCenterResponse> alerts(
@@ -52,7 +53,8 @@ public class AlertController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<AlertLotOverviewResponse> lots(

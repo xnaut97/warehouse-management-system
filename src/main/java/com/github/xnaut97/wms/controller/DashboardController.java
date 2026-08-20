@@ -23,7 +23,8 @@ public class DashboardController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<DashboardSummaryResponse> summary() {
@@ -40,7 +41,8 @@ public class DashboardController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<DashboardOverviewResponse> overview() {
@@ -57,7 +59,8 @@ public class DashboardController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<List<MonthlyStatisticResponse>> monthlyReceipts() {
@@ -74,7 +77,8 @@ public class DashboardController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<List<MonthlyStatisticResponse>> monthlyIssues() {
@@ -91,7 +95,8 @@ public class DashboardController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<InventoryAnalysisResponse> inventoryAnalysis() {
@@ -108,7 +113,8 @@ public class DashboardController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<InventoryVarianceResponse> inventoryVariance() {
@@ -125,7 +131,8 @@ public class DashboardController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<DecisionSupportResponse> decisionSupport() {
@@ -142,7 +149,8 @@ public class DashboardController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<List<LowStockAlertResponse>>
@@ -160,7 +168,8 @@ public class DashboardController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<List<ReplenishmentRecommendationResponse>> replenishmentRecommendations() {
@@ -180,7 +189,8 @@ public class DashboardController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<List<InventoryTrendResponse>> inventoryTrend() {
@@ -200,7 +210,8 @@ public class DashboardController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<OperationAlertResponse> operationAlerts() {
@@ -217,7 +228,8 @@ public class DashboardController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<List<RecentTransactionResponse>> recentTransactions() {
