@@ -6,7 +6,9 @@ import com.github.xnaut97.wms.dto.product.ProductResponse;
 import com.github.xnaut97.wms.dto.product.UpdateProductRequest;
 import com.github.xnaut97.wms.entity.product.Product;
 import com.github.xnaut97.wms.enums.AuditAction;
+import com.github.xnaut97.wms.enums.IssueStatus;
 import com.github.xnaut97.wms.exception.BusinessException;
+import com.github.xnaut97.wms.repository.product.ProductIssueItemRepository;
 import com.github.xnaut97.wms.repository.product.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Set;
 
 @Service
@@ -22,12 +25,15 @@ import java.util.Set;
 public class ProductService {
 
     private static final Set<String> ALLOWED_CATEGORIES = Set.of(
-            "Keo dán gạch",
-            "Keo 2 thành phần",
-            "Sản phẩm khác"
+            "Keo C1",
+            "Keo 2"
     );
 
+    private static final int PRICE_SCALE = 2;
+
     private final ProductRepository repository;
+
+    private final ProductIssueItemRepository issueItemRepository;
 
     @Audit(
             action = AuditAction.CREATE,
@@ -49,17 +55,12 @@ public class ProductService {
         );
 
         Product product = new Product();
-        BigDecimal averagePrice = resolveAveragePrice(
-                request.getAveragePrice(),
-                request.getSellingPrice()
-        );
 
         product.setCode(request.getCode());
         product.setName(request.getName());
         product.setSpecification(request.getSpecification());
         product.setUnit(request.getUnit());
-        product.setSellingPrice(request.getSellingPrice());
-        product.setAveragePrice(averagePrice);
+        product.setAveragePrice(BigDecimal.ZERO);
         product.setCategory(validateCategory(request.getCategory()));
         product.setMinimumStock(request.getMinimumStock());
         product.setMaximumStock(request.getMaximumStock());
@@ -91,13 +92,6 @@ public class ProductService {
         product.setName(request.getName());
         product.setSpecification(request.getSpecification());
         product.setUnit(request.getUnit());
-        product.setSellingPrice(request.getSellingPrice());
-        product.setAveragePrice(
-                resolveAveragePrice(
-                        request.getAveragePrice(),
-                        request.getSellingPrice()
-                )
-        );
         product.setCategory(validateCategory(request.getCategory()));
         product.setMinimumStock(request.getMinimumStock());
         product.setMaximumStock(request.getMaximumStock());
@@ -202,6 +196,33 @@ public class ProductService {
         return product;
     }
 
+    /**
+     * Giá trung bình của sản phẩm được tính từ các phiếu xuất đã xác nhận,
+     * theo bình quân gia quyền trên số lượng xuất.
+     */
+    public void recalculateAveragePrice(Long productId) {
+
+        Product product = findProductById(productId);
+
+        BigDecimal averagePrice =
+                issueItemRepository.calculateAveragePrice(
+                        productId,
+                        IssueStatus.CONFIRMED
+                );
+
+        product.setAveragePrice(
+                averagePrice == null
+                        ? BigDecimal.ZERO
+                        : averagePrice.setScale(
+                                PRICE_SCALE,
+                                RoundingMode.HALF_UP
+                        )
+        );
+
+        repository.save(product);
+
+    }
+
     private ProductResponse map(
             Product product
     ) {
@@ -212,7 +233,6 @@ public class ProductService {
                 .name(product.getName())
                 .specification(product.getSpecification())
                 .unit(product.getUnit())
-                .sellingPrice(product.getSellingPrice())
                 .averagePrice(product.getAveragePrice())
                 .category(product.getCategory())
                 .minimumStock(product.getMinimumStock())
@@ -229,15 +249,6 @@ public class ProductService {
         }
 
         return category;
-
-    }
-
-    private BigDecimal resolveAveragePrice(
-            BigDecimal averagePrice,
-            BigDecimal sellingPrice
-    ) {
-
-        return averagePrice == null ? sellingPrice : averagePrice;
 
     }
 

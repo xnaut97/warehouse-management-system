@@ -20,13 +20,6 @@ public class UpdateProductRequest {
     @NotBlank
     private String unit;
 
-    @NotNull
-    @PositiveOrZero
-    private BigDecimal sellingPrice;
-
-    @PositiveOrZero
-    private BigDecimal averagePrice;
-
     @NotBlank
     private String category;
 

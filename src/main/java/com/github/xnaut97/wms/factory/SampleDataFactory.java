@@ -155,8 +155,6 @@ public class SampleDataFactory {
 
             String unit,
 
-            BigDecimal price,
-
             String category
 
     ){
@@ -171,9 +169,7 @@ public class SampleDataFactory {
 
         product.setUnit(unit);
 
-        product.setSellingPrice(price);
-
-        product.setAveragePrice(price);
+        product.setAveragePrice(BigDecimal.ZERO);
 
         product.setMinimumStock(BigDecimal.valueOf(20));
 
