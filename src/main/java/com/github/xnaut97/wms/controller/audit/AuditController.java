@@ -28,7 +28,8 @@ public class AuditController {
     @PreAuthorize("""
             hasAnyRole(
             'ADMIN',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<Page<AuditLogResponse>> getAuditLogs(

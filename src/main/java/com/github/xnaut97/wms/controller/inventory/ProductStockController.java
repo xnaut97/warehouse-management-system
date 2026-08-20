@@ -20,7 +20,7 @@ public class ProductStockController {
     private final ProductStockService service;
 
     @GetMapping("/lots")
-    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_STAFF','EXECUTIVE_BOARD')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_STAFF','EXECUTIVE_BOARD','ACCOUNTANT')")
     public ApiResponse<List<ProductStockResponse>> getAvailableLots(
 
             @RequestParam

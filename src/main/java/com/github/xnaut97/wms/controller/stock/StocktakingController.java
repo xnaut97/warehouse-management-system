@@ -179,7 +179,8 @@ public class StocktakingController {
             'ADMIN',
             'WAREHOUSE_MANAGER',
             'WAREHOUSE_STAFF',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<StocktakingDetailResponse> get(
@@ -204,7 +205,8 @@ hasAnyRole(
 'ADMIN',
 'WAREHOUSE_MANAGER',
 'WAREHOUSE_STAFF',
-'EXECUTIVE_BOARD'
+'EXECUTIVE_BOARD',
+'ACCOUNTANT'
 )
 """)
     public ApiResponse<Page<StocktakingResponse>> getAll(

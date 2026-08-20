@@ -27,7 +27,8 @@ public class OperationReportController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<OperationReportResponse> report(
@@ -57,7 +58,8 @@ public class OperationReportController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<StockSummaryReportResponse> stockSummary(

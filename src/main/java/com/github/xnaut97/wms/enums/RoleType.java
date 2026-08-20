@@ -8,6 +8,8 @@ public enum RoleType {
 
     WAREHOUSE_STAFF,
 
-    EXECUTIVE_BOARD
+    EXECUTIVE_BOARD,
+
+    ACCOUNTANT
 
 }

@@ -18,7 +18,7 @@ public class ReceiptController {
     private final ReceiptService service;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','EXECUTIVE_BOARD')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','EXECUTIVE_BOARD','ACCOUNTANT')")
     public ApiResponse<Page<ReceiptResponse>> getAll(
             Pageable pageable
     ) {
@@ -31,7 +31,7 @@ public class ReceiptController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','EXECUTIVE_BOARD')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','EXECUTIVE_BOARD','ACCOUNTANT')")
     public ApiResponse<ReceiptDetailResponse> getDetail(
             @PathVariable Long id
     ) {

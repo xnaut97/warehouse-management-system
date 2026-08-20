@@ -33,7 +33,7 @@ public class CustomerController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','EXECUTIVE_BOARD')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','EXECUTIVE_BOARD','ACCOUNTANT')")
     public ApiResponse<Page<CustomerResponse>> getAll(
             Pageable pageable
     ) {
@@ -46,7 +46,7 @@ public class CustomerController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','EXECUTIVE_BOARD')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','EXECUTIVE_BOARD','ACCOUNTANT')")
     public ApiResponse<CustomerResponse> getById(
             @PathVariable Long id
     ) {

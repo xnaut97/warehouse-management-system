@@ -34,7 +34,8 @@ public class StocktakingReportController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<Page<StocktakingReportResponse>> report(
@@ -56,7 +57,8 @@ public class StocktakingReportController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<Page<StocktakingVarianceReportResponse>> variances(
@@ -78,7 +80,8 @@ public class StocktakingReportController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<StocktakingSummaryReportResponse> summary() {
@@ -98,7 +101,8 @@ public class StocktakingReportController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<StocktakingAccuracyReportResponse> accuracy(

@@ -25,7 +25,8 @@ public class ReceiptReportController {
             hasAnyRole(
                 'ADMIN',
                 'WAREHOUSE_MANAGER',
-                'EXECUTIVE_BOARD'
+                'EXECUTIVE_BOARD',
+                'ACCOUNTANT'
             )
             """)
     public ApiResponse<ReceiptDailyReportResponse> dailyReceiptReport(
@@ -48,7 +49,8 @@ public class ReceiptReportController {
             hasAnyRole(
                 'ADMIN',
                 'WAREHOUSE_MANAGER',
-                'EXECUTIVE_BOARD'
+                'EXECUTIVE_BOARD',
+                'ACCOUNTANT'
             )
             """)
     public ApiResponse<List<ReceiptMonthlyReportResponse>> monthlyReceiptReport(
@@ -70,7 +72,8 @@ public class ReceiptReportController {
             hasAnyRole(
                 'ADMIN',
                 'WAREHOUSE_MANAGER',
-                'EXECUTIVE_BOARD'
+                'EXECUTIVE_BOARD',
+                'ACCOUNTANT'
             )
             """)
     public ApiResponse<List<ReceiptSupplierReportResponse>> supplierReceiptReport(

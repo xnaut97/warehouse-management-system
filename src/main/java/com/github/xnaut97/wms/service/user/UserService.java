@@ -72,10 +72,7 @@ public class UserService {
             throw new BusinessException("Email đã tồn tại.");
         }
 
-        Role role = roleRepository.findByRole(
-                RoleType.valueOf(request.getRole().toUpperCase())
-        ).orElseThrow(() ->
-                new BusinessException("Không tìm thấy vai trò " + request.getRole()));
+        Role role = resolveRole(request.getRole());
 
         User user = new User();
 
@@ -107,10 +104,7 @@ public class UserService {
             throw new BusinessException("Email đã tồn tại");
         }
 
-        Role role = roleRepository.findByRole(
-                RoleType.valueOf(request.getRole().toUpperCase())
-        ).orElseThrow(() ->
-                new BusinessException("Không tìm thấy vai trò"));
+        Role role = resolveRole(request.getRole());
 
         user.setFullName(request.getFullName());
         user.setEmail(request.getEmail());
@@ -185,6 +179,22 @@ public class UserService {
         if(user == null) return;
 
         userRepository.delete(user);
+    }
+
+    private Role resolveRole(String role) {
+
+        RoleType roleType;
+
+        try {
+            roleType = RoleType.valueOf(role.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException("Vai trò không hợp lệ: " + role);
+        }
+
+        return roleRepository.findByRole(roleType)
+                .orElseThrow(() ->
+                        new BusinessException("Không tìm thấy vai trò " + role));
+
     }
 
     private UserResponse mapToResponse(User user) {

@@ -28,7 +28,8 @@ public class IssueReportController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<IssueDailyReportResponse> dailyIssueReport(
@@ -53,7 +54,8 @@ public class IssueReportController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<List<IssueCustomerReportResponse>> customerIssueReport(
@@ -87,7 +89,8 @@ public class IssueReportController {
             hasAnyRole(
             'ADMIN',
             'WAREHOUSE_MANAGER',
-            'EXECUTIVE_BOARD'
+            'EXECUTIVE_BOARD',
+            'ACCOUNTANT'
             )
             """)
     public ApiResponse<List<IssueMaterialReportResponse>> materialIssueReport(
