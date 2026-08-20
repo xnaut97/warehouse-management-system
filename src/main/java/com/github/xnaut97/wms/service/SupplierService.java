@@ -61,10 +61,12 @@ public class SupplierService {
 
         supplier.setCode(request.getCode());
         supplier.setName(request.getName());
+        supplier.setSupplierGroup(request.getSupplierGroup());
         supplier.setContactPerson(request.getContactPerson());
         supplier.setPhone(request.getPhone());
         supplier.setEmail(request.getEmail());
         supplier.setAddress(request.getAddress());
+        supplier.setNote(request.getNote());
 
         repository.save(supplier);
 
@@ -88,10 +90,12 @@ public class SupplierService {
 
         supplier.setCode(request.getCode());
         supplier.setName(request.getName());
+        supplier.setSupplierGroup(request.getSupplierGroup());
         supplier.setContactPerson(request.getContactPerson());
         supplier.setPhone(request.getPhone());
         supplier.setEmail(request.getEmail());
         supplier.setAddress(request.getAddress());
+        supplier.setNote(request.getNote());
 
         repository.save(supplier);
 
@@ -129,10 +133,12 @@ public class SupplierService {
                 .id(supplier.getId())
                 .code(supplier.getCode())
                 .name(supplier.getName())
+                .supplierGroup(supplier.getSupplierGroup())
                 .contactPerson(supplier.getContactPerson())
                 .phone(supplier.getPhone())
                 .email(supplier.getEmail())
                 .address(supplier.getAddress())
+                .note(supplier.getNote())
                 .build();
 
     }

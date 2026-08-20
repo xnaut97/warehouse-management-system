@@ -1,5 +1,6 @@
 package com.github.xnaut97.wms.dto.supplier;
 
+import com.github.xnaut97.wms.enums.SupplierGroup;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -13,6 +14,8 @@ public class SupplierResponse {
 
     private String name;
 
+    private SupplierGroup supplierGroup;
+
     private String contactPerson;
 
     private String phone;
@@ -20,6 +23,8 @@ public class SupplierResponse {
     private String email;
 
     private String address;
+
+    private String note;
 
     private Boolean enabled;
 

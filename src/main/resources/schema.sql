@@ -59,3 +59,31 @@ SET @stmt := IF(@role_role_is_enum > 0, 'ALTER TABLE role MODIFY COLUMN role VAR
 PREPARE role_role_widen FROM @stmt;
 EXECUTE role_role_widen;
 DEALLOCATE PREPARE role_role_widen;
+
+SET @suppliers_table_exists := (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'suppliers');
+
+SET @suppliers_supplier_group_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'suppliers' AND COLUMN_NAME = 'supplier_group');
+
+SET @stmt := IF(@suppliers_table_exists > 0 AND @suppliers_supplier_group_exists = 0, 'ALTER TABLE suppliers ADD COLUMN supplier_group VARCHAR(32) NULL', 'SELECT 1');
+PREPARE suppliers_supplier_group_add FROM @stmt;
+EXECUTE suppliers_supplier_group_add;
+DEALLOCATE PREPARE suppliers_supplier_group_add;
+
+SET @stmt := IF(@suppliers_table_exists > 0, 'UPDATE suppliers SET supplier_group = ''SAND'' WHERE supplier_group IS NULL OR supplier_group NOT IN (''SAND'', ''CEMENT'', ''ADDITIVE'', ''PACKAGING_MATERIAL'')', 'SELECT 1');
+PREPARE suppliers_supplier_group_backfill FROM @stmt;
+EXECUTE suppliers_supplier_group_backfill;
+DEALLOCATE PREPARE suppliers_supplier_group_backfill;
+
+SET @suppliers_supplier_group_nullable := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'suppliers' AND COLUMN_NAME = 'supplier_group' AND IS_NULLABLE = 'YES');
+
+SET @stmt := IF(@suppliers_supplier_group_nullable > 0, 'ALTER TABLE suppliers MODIFY COLUMN supplier_group VARCHAR(32) NOT NULL', 'SELECT 1');
+PREPARE suppliers_supplier_group_require FROM @stmt;
+EXECUTE suppliers_supplier_group_require;
+DEALLOCATE PREPARE suppliers_supplier_group_require;
+
+SET @suppliers_note_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'suppliers' AND COLUMN_NAME = 'note');
+
+SET @stmt := IF(@suppliers_table_exists > 0 AND @suppliers_note_exists = 0, 'ALTER TABLE suppliers ADD COLUMN note VARCHAR(1000) NULL', 'SELECT 1');
+PREPARE suppliers_note_add FROM @stmt;
+EXECUTE suppliers_note_add;
+DEALLOCATE PREPARE suppliers_note_add;
