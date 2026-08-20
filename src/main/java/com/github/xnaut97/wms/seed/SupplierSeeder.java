@@ -1,5 +1,6 @@
 package com.github.xnaut97.wms.seed;
 
+import com.github.xnaut97.wms.enums.SupplierGroup;
 import com.github.xnaut97.wms.factory.SampleDataFactory;
 import com.github.xnaut97.wms.repository.SupplierRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,11 +19,11 @@ public class SupplierSeeder {
     @Transactional
     public void seed() {
         Stream.of(
-                        factory.supplier("SUP001", "Global Steel"),
-                        factory.supplier("SUP002", "ABC Metals"),
-                        factory.supplier("SUP003", "Viet Plastic"),
-                        factory.supplier("SUP004", "Industrial Components"),
-                        factory.supplier("SUP005", "Asia Materials")
+                        factory.supplier("SUP001", "Global Steel", SupplierGroup.SAND),
+                        factory.supplier("SUP002", "ABC Metals", SupplierGroup.CEMENT),
+                        factory.supplier("SUP003", "Viet Plastic", SupplierGroup.PACKAGING_MATERIAL),
+                        factory.supplier("SUP004", "Industrial Components", SupplierGroup.ADDITIVE),
+                        factory.supplier("SUP005", "Asia Materials", SupplierGroup.SAND)
 
                 )
                 .filter(s -> !repository.existsByCode(s.getCode()))

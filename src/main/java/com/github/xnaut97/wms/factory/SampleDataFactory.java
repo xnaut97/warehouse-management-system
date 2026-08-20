@@ -8,6 +8,7 @@ import com.github.xnaut97.wms.entity.material.Material;
 import com.github.xnaut97.wms.entity.user.Role;
 import com.github.xnaut97.wms.entity.user.User;
 import com.github.xnaut97.wms.enums.RoleType;
+import com.github.xnaut97.wms.enums.SupplierGroup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -76,7 +77,8 @@ public class SampleDataFactory {
 
     public Supplier supplier(
             String code,
-            String name
+            String name,
+            SupplierGroup supplierGroup
     ) {
 
         Supplier supplier = new Supplier();
@@ -84,6 +86,8 @@ public class SampleDataFactory {
         supplier.setCode(code);
 
         supplier.setName(name);
+
+        supplier.setSupplierGroup(supplierGroup);
 
         supplier.setContactPerson("Nguyen Van A");
 

@@ -1,7 +1,9 @@
 package com.github.xnaut97.wms.dto.supplier;
 
+import com.github.xnaut97.wms.enums.SupplierGroup;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,6 +20,9 @@ public class SupplierRequest {
     @Size(max = 100)
     private String name;
 
+    @NotNull(message = "Supplier group is required")
+    private SupplierGroup supplierGroup;
+
     @Size(max = 100)
     private String contactPerson;
 
@@ -29,5 +34,8 @@ public class SupplierRequest {
 
     @Size(max = 255)
     private String address;
+
+    @Size(max = 1000)
+    private String note;
 
 }
