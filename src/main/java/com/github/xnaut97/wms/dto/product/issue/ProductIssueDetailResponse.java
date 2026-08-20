@@ -16,7 +16,11 @@ public class ProductIssueDetailResponse {
 
     private String issueNo;
 
+    private Long warehouseId;
+
     private String warehouse;
+
+    private Long customerId;
 
     private String customer;
 

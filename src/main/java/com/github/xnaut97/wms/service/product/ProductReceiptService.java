@@ -346,11 +346,14 @@ public class ProductReceiptService {
             ProductReceiptItem item
     ) {
 
+        String lotNumber = normalizeLot(item.getLotNumber());
+
         ProductInventory inventory =
                 inventoryRepository
-                        .findByWarehouseIdAndProductId(
+                        .findByWarehouseProductAndLot(
                                 receipt.getWarehouse().getId(),
-                                item.getProduct().getId()
+                                item.getProduct().getId(),
+                                lotNumber
                         )
                         .orElseGet(() -> {
 
@@ -365,6 +368,8 @@ public class ProductReceiptService {
                                     item.getProduct()
                             );
 
+                            newInventory.setLotNumber(lotNumber);
+
                             newInventory.setQuantity(
                                     BigDecimal.ZERO
                             );
@@ -372,12 +377,25 @@ public class ProductReceiptService {
                             return newInventory;
                         });
 
+        if (item.getExpirationDate() != null) {
+            inventory.setExpirationDate(
+                    item.getExpirationDate()
+            );
+        }
+
         inventory.setQuantity(
                 inventory.getQuantity()
                         .add(item.getQuantity())
         );
 
         inventoryRepository.save(inventory);
+    }
+
+    private String normalizeLot(String lotNumber) {
+
+        return lotNumber == null || lotNumber.isBlank()
+                ? null
+                : lotNumber.trim();
     }
 
     private void updateTotal(ProductReceipt receipt) {

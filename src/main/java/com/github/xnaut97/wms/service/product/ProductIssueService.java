@@ -72,7 +72,13 @@ public class ProductIssueService {
         return ProductIssueDetailResponse.builder()
                 .id(issue.getId())
                 .issueNo(issue.getIssueNo())
+                .warehouseId(issue.getWarehouse().getId())
                 .warehouse(issue.getWarehouse().getName())
+                .customerId(
+                        issue.getCustomer() != null
+                                ? issue.getCustomer().getId()
+                                : null
+                )
                 .customer(
                         issue.getCustomer() != null
                                 ? issue.getCustomer().getName()
@@ -160,14 +166,24 @@ public class ProductIssueService {
                         request.getProductId()
                 );
 
+        String lotNumber = normalizeLot(request.getLotNumber());
+
+        ProductInventory inventory =
+                validateAvailableStock(
+                        issue,
+                        product,
+                        lotNumber,
+                        request.getQuantity()
+                );
+
         ProductIssueItem item =
                 new ProductIssueItem();
 
         item.setIssue(issue);
         item.setProduct(product);
         item.setQuantity(request.getQuantity());
-        item.setLotNumber(request.getLotNumber());
-        item.setExpirationDate(request.getExpirationDate());
+        item.setLotNumber(lotNumber);
+        item.setExpirationDate(inventory.getExpirationDate());
         item.setUnitPrice(request.getUnitPrice());
         item.setAmount(
                 calculateAmount(
@@ -212,9 +228,19 @@ public class ProductIssueService {
             );
         }
 
+        String lotNumber = normalizeLot(request.getLotNumber());
+
+        ProductInventory inventory =
+                validateAvailableStock(
+                        issue,
+                        item.getProduct(),
+                        lotNumber,
+                        request.getQuantity()
+                );
+
         item.setQuantity(request.getQuantity());
-        item.setLotNumber(request.getLotNumber());
-        item.setExpirationDate(request.getExpirationDate());
+        item.setLotNumber(lotNumber);
+        item.setExpirationDate(inventory.getExpirationDate());
         item.setUnitPrice(request.getUnitPrice());
 
         item.setAmount(
@@ -390,19 +416,82 @@ public class ProductIssueService {
             ProductIssueItem item
     ) {
 
+        return findInventory(
+                issue,
+                item.getProduct(),
+                normalizeLot(item.getLotNumber())
+        );
+    }
+
+    private ProductInventory findInventory(
+            ProductIssue issue,
+            Product product,
+            String lotNumber
+    ) {
+
         return inventoryRepository
-                .findByWarehouseIdAndProductId(
+                .findByWarehouseProductAndLot(
                         issue.getWarehouse().getId(),
-                        item.getProduct().getId()
+                        product.getId(),
+                        lotNumber
                 )
                 .orElseThrow(() ->
                         new BusinessException(
-                                String.format(
-                                        "Không tìm thấy tồn kho sản phẩm %s trong kho.",
-                                        item.getProduct().getName()
-                                )
+                                lotNumber == null
+                                        ? String.format(
+                                                "Không tìm thấy tồn kho sản phẩm %s trong kho.",
+                                                product.getName()
+                                        )
+                                        : String.format(
+                                                "Không tìm thấy tồn kho sản phẩm %s (lô %s) trong kho.",
+                                                product.getName(),
+                                                lotNumber
+                                        )
                         )
                 );
+    }
+
+    /**
+     * Guards every write path of the issue document against the real lot
+     * level stock, so an edited frontend request cannot slip an over-issue
+     * through and only fail at confirmation time.
+     */
+    private ProductInventory validateAvailableStock(
+            ProductIssue issue,
+            Product product,
+            String lotNumber,
+            BigDecimal quantity
+    ) {
+
+        ProductInventory inventory =
+                findInventory(issue, product, lotNumber);
+
+        BigDecimal available =
+                inventory.getQuantity() != null
+                        ? inventory.getQuantity()
+                        : BigDecimal.ZERO;
+
+        if (quantity != null
+                && available.compareTo(quantity) < 0) {
+
+            throw new BusinessException(
+                    String.format(
+                            "Tồn kho sản phẩm %s không đủ. Có sẵn: %s, yêu cầu: %s",
+                            product.getName(),
+                            available,
+                            quantity
+                    )
+            );
+        }
+
+        return inventory;
+    }
+
+    private String normalizeLot(String lotNumber) {
+
+        return lotNumber == null || lotNumber.isBlank()
+                ? null
+                : lotNumber.trim();
     }
 
     private void updateTotal(ProductIssue issue) {
