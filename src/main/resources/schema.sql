@@ -28,3 +28,27 @@ SET @stmt := IF(@stocktaking_item_physical_required > 0, 'ALTER TABLE stocktakin
 PREPARE stocktaking_item_physical_relax FROM @stmt;
 EXECUTE stocktaking_item_physical_relax;
 DEALLOCATE PREPARE stocktaking_item_physical_relax;
+
+SET @products_selling_price_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'selling_price');
+
+SET @stmt := IF(@products_selling_price_exists > 0, 'UPDATE products SET average_price = selling_price WHERE average_price IS NULL OR average_price = 0', 'SELECT 1');
+PREPARE products_average_price_backfill FROM @stmt;
+EXECUTE products_average_price_backfill;
+DEALLOCATE PREPARE products_average_price_backfill;
+
+SET @stmt := IF(@products_selling_price_exists > 0, 'ALTER TABLE products DROP COLUMN selling_price', 'SELECT 1');
+PREPARE products_selling_price_drop FROM @stmt;
+EXECUTE products_selling_price_drop;
+DEALLOCATE PREPARE products_selling_price_drop;
+
+SET @products_category_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'category');
+
+SET @stmt := IF(@products_category_exists > 0, 'UPDATE products SET category = ''Keo 2'' WHERE category LIKE ''%2%'' AND category <> ''Keo 2''', 'SELECT 1');
+PREPARE products_category_keo2 FROM @stmt;
+EXECUTE products_category_keo2;
+DEALLOCATE PREPARE products_category_keo2;
+
+SET @stmt := IF(@products_category_exists > 0, 'UPDATE products SET category = ''Keo C1'' WHERE category IS NULL OR TRIM(category) = '''' OR category NOT IN (''Keo C1'', ''Keo 2'')', 'SELECT 1');
+PREPARE products_category_keoc1 FROM @stmt;
+EXECUTE products_category_keoc1;
+DEALLOCATE PREPARE products_category_keoc1;

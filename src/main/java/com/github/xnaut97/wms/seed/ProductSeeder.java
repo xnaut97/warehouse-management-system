@@ -7,12 +7,22 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Set;
 import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
 @Transactional
 public class ProductSeeder {
+
+    private static final String CATEGORY_KEO_C1 = "Keo C1";
+
+    private static final String CATEGORY_KEO_2 = "Keo 2";
+
+    private static final Set<String> CATEGORIES = Set.of(
+            CATEGORY_KEO_C1,
+            CATEGORY_KEO_2
+    );
 
     private final ProductRepository repository;
 
@@ -22,11 +32,11 @@ public class ProductSeeder {
 
         if (repository.count() > 0) {
             repository.findAll().forEach(product -> {
-                if (product.getCategory() == null || product.getCategory().isBlank()) {
-                    product.setCategory("Sản phẩm khác");
-                }
+                product.setCategory(
+                        normalizeCategory(product.getCategory())
+                );
                 if (product.getAveragePrice() == null) {
-                    product.setAveragePrice(product.getSellingPrice());
+                    product.setAveragePrice(BigDecimal.ZERO);
                 }
                 if (product.getMinimumStock() == null) {
                     product.setMinimumStock(BigDecimal.ZERO);
@@ -46,8 +56,7 @@ public class ProductSeeder {
                                 "Steel Cabinet",
                                 "2-door cabinet",
                                 "Piece",
-                                new BigDecimal("1800000"),
-                                "Sản phẩm khác"
+                                CATEGORY_KEO_C1
                         ),
 
                         factory.product(
@@ -55,8 +64,7 @@ public class ProductSeeder {
                                 "Office Desk",
                                 "Wooden desk",
                                 "Piece",
-                                new BigDecimal("2500000"),
-                                "Sản phẩm khác"
+                                CATEGORY_KEO_C1
                         ),
 
                         factory.product(
@@ -64,8 +72,7 @@ public class ProductSeeder {
                                 "Metal Shelf",
                                 "5-layer shelf",
                                 "Piece",
-                                new BigDecimal("1450000"),
-                                "Keo dán gạch"
+                                CATEGORY_KEO_C1
                         ),
 
                         factory.product(
@@ -73,8 +80,7 @@ public class ProductSeeder {
                                 "Tool Box",
                                 "Heavy duty",
                                 "Piece",
-                                new BigDecimal("650000"),
-                                "Keo 2 thành phần"
+                                CATEGORY_KEO_2
                         ),
 
                         factory.product(
@@ -82,8 +88,7 @@ public class ProductSeeder {
                                 "Electrical Panel",
                                 "220V",
                                 "Piece",
-                                new BigDecimal("3200000"),
-                                "Sản phẩm khác"
+                                CATEGORY_KEO_2
                         )
 
                 )
@@ -91,6 +96,25 @@ public class ProductSeeder {
                 .forEach(repository::save);
 
         System.out.println("✓ Finished products seeded");
+
+    }
+
+    /**
+     * Đưa phân loại cũ về bộ phân loại hiện hành (Keo C1 / Keo 2).
+     */
+    private String normalizeCategory(String category) {
+
+        if (category == null || category.isBlank()) {
+            return CATEGORY_KEO_C1;
+        }
+
+        if (CATEGORIES.contains(category)) {
+            return category;
+        }
+
+        return category.contains("2")
+                ? CATEGORY_KEO_2
+                : CATEGORY_KEO_C1;
 
     }
 

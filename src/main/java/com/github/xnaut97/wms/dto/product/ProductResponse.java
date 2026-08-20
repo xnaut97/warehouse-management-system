@@ -19,8 +19,6 @@ public class ProductResponse {
 
     private String unit;
 
-    private BigDecimal sellingPrice;
-
     private BigDecimal averagePrice;
 
     private String category;
