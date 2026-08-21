@@ -25,6 +25,24 @@ public interface GoodsReceiptItemRepository
     );
 
     @Query("""
+            SELECT SUM(i.quantity * i.unitPrice) / NULLIF(SUM(i.quantity), 0)
+            FROM GoodsReceiptItem i
+            WHERE i.material.id = :materialId
+              AND i.unitPrice IS NOT NULL
+              AND i.quantity > 0
+              AND i.receipt.status = :status
+            """)
+    BigDecimal calculateAveragePrice(
+
+            @Param("materialId")
+            Long materialId,
+
+            @Param("status")
+            ReceiptStatus status
+
+    );
+
+    @Query("""
             SELECT COALESCE(SUM(i.quantity),0)
             FROM GoodsReceiptItem i
             WHERE i.receipt.status = :status

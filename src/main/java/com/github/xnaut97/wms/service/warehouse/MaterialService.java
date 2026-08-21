@@ -7,8 +7,10 @@ import com.github.xnaut97.wms.dto.material.MaterialResponse;
 import com.github.xnaut97.wms.entity.material.Material;
 import com.github.xnaut97.wms.entity.material.Supplier;
 import com.github.xnaut97.wms.enums.AuditAction;
+import com.github.xnaut97.wms.enums.ReceiptStatus;
 import com.github.xnaut97.wms.exception.BusinessException;
 import com.github.xnaut97.wms.repository.MaterialRepository;
+import com.github.xnaut97.wms.repository.goods.GoodsReceiptItemRepository;
 import com.github.xnaut97.wms.service.SupplierService;
 import com.github.xnaut97.wms.utils.PageUtils;
 import lombok.RequiredArgsConstructor;
@@ -16,13 +18,20 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 @Service
 @RequiredArgsConstructor
 public class MaterialService {
 
+    private static final int PRICE_SCALE = 2;
+
     private final MaterialRepository repository;
 
     private final SupplierService supplierService;
+
+    private final GoodsReceiptItemRepository receiptItemRepository;
 
     public PageResponse<MaterialResponse> getAll(Pageable pageable) {
 
@@ -61,7 +70,7 @@ public class MaterialService {
         material.setCode(request.getCode());
         material.setName(request.getName());
         material.setUnit(request.getUnit());
-        material.setUnitPrice(request.getUnitPrice());
+        material.setUnitPrice(BigDecimal.ZERO);
         material.setMinimumStock(request.getMinimumStock());
         material.setMaximumStock(request.getMaximumStock());
         material.setSupplier(supplier);
@@ -97,7 +106,6 @@ public class MaterialService {
         material.setCode(request.getCode());
         material.setName(request.getName());
         material.setUnit(request.getUnit());
-        material.setUnitPrice(request.getUnitPrice());
         material.setMinimumStock(request.getMinimumStock());
         material.setMaximumStock(request.getMaximumStock());
         material.setSupplier(supplier);
@@ -153,6 +161,33 @@ public class MaterialService {
                 );
 
         return PageUtils.from(page, this::map);
+
+    }
+
+    /**
+     * Giá trung bình của nguyên liệu được tính từ các phiếu nhập đã xác nhận,
+     * theo bình quân gia quyền trên số lượng nhập.
+     */
+    public void recalculateAveragePrice(Long materialId) {
+
+        Material material = findMaterialById(materialId);
+
+        BigDecimal averagePrice =
+                receiptItemRepository.calculateAveragePrice(
+                        materialId,
+                        ReceiptStatus.CONFIRMED
+                );
+
+        material.setUnitPrice(
+                averagePrice == null
+                        ? BigDecimal.ZERO
+                        : averagePrice.setScale(
+                                PRICE_SCALE,
+                                RoundingMode.HALF_UP
+                        )
+        );
+
+        repository.save(material);
 
     }
 
