@@ -8,4 +8,6 @@ public interface CustomerRepository
 
     boolean existsByEmail(String email);
 
+    boolean existsByCode(String code);
+
 }

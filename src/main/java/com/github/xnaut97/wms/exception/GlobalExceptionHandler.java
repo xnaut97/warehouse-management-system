@@ -3,6 +3,7 @@ package com.github.xnaut97.wms.exception;
 import com.github.xnaut97.wms.dto.common.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -43,6 +44,16 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.badRequest()
                 .body(ApiResponse.error(message));
+
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> notReadable(
+            HttpMessageNotReadableException ex
+    ) {
+
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.error("Dữ liệu gửi lên không hợp lệ."));
 
     }
 

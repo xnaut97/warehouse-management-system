@@ -27,17 +27,25 @@ public class CustomerService {
     @Transactional
     public CustomerResponse create(CustomerRequest request) {
 
-        if (request.getEmail() != null &&
+        if (repository.existsByCode(request.getCode())) {
+            throw new BusinessException("Mã khách hàng đã tồn tại.");
+        }
+
+        if (hasText(request.getEmail()) &&
                 repository.existsByEmail(request.getEmail())) {
             throw new BusinessException("Email đã tồn tại.");
         }
 
         Customer customer = new Customer();
 
+        customer.setCode(request.getCode());
         customer.setName(request.getName());
-        customer.setPhone(request.getPhone());
-        customer.setEmail(request.getEmail());
         customer.setAddress(request.getAddress());
+        customer.setCustomerGroup(request.getCustomerGroup());
+        customer.setReceiverName(request.getReceiverName());
+        customer.setPhone(request.getPhone());
+        customer.setEmail(normalizeEmail(request.getEmail()));
+        customer.setNote(request.getNote());
         customer.setEnabled(true);
 
         repository.save(customer);
@@ -72,7 +80,16 @@ public class CustomerService {
 
         Customer customer = findCustomerById(id);
 
-        if (request.getEmail() != null
+        if (!request.getCode().equals(customer.getCode())
+                && repository.existsByCode(request.getCode())) {
+
+            throw new BusinessException(
+                    "Mã khách hàng đã tồn tại."
+            );
+
+        }
+
+        if (hasText(request.getEmail())
                 && !request.getEmail().equals(customer.getEmail())
                 && repository.existsByEmail(request.getEmail())) {
 
@@ -82,10 +99,14 @@ public class CustomerService {
 
         }
 
+        customer.setCode(request.getCode());
         customer.setName(request.getName());
-        customer.setPhone(request.getPhone());
-        customer.setEmail(request.getEmail());
         customer.setAddress(request.getAddress());
+        customer.setCustomerGroup(request.getCustomerGroup());
+        customer.setReceiverName(request.getReceiverName());
+        customer.setPhone(request.getPhone());
+        customer.setEmail(normalizeEmail(request.getEmail()));
+        customer.setNote(request.getNote());
 
         repository.save(customer);
 
@@ -151,12 +172,28 @@ public class CustomerService {
 
         return CustomerResponse.builder()
                 .id(customer.getId())
+                .code(customer.getCode())
                 .name(customer.getName())
+                .address(customer.getAddress())
+                .customerGroup(customer.getCustomerGroup())
+                .receiverName(customer.getReceiverName())
                 .phone(customer.getPhone())
                 .email(customer.getEmail())
-                .address(customer.getAddress())
+                .note(customer.getNote())
                 .enabled(customer.getEnabled())
                 .build();
+
+    }
+
+    private boolean hasText(String value) {
+
+        return value != null && !value.isBlank();
+
+    }
+
+    private String normalizeEmail(String email) {
+
+        return hasText(email) ? email : null;
 
     }
 

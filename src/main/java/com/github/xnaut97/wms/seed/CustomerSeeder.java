@@ -1,5 +1,6 @@
 package com.github.xnaut97.wms.seed;
 
+import com.github.xnaut97.wms.enums.CustomerGroup;
 import com.github.xnaut97.wms.factory.SampleDataFactory;
 import com.github.xnaut97.wms.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,15 +27,15 @@ public class CustomerSeeder {
 
                 List.of(
 
-                        factory.customer("CUS001","Samsung Vietnam"),
+                        factory.customer("CUS001","Samsung Vietnam", CustomerGroup.PROJECT),
 
-                        factory.customer("CUS002","LG Electronics"),
+                        factory.customer("CUS002","LG Electronics", CustomerGroup.PROJECT),
 
-                        factory.customer("CUS003","Intel Products"),
+                        factory.customer("CUS003","Intel Products", CustomerGroup.AGENT),
 
-                        factory.customer("CUS004","Foxconn"),
+                        factory.customer("CUS004","Foxconn", CustomerGroup.AGENT),
 
-                        factory.customer("CUS005","Canon Vietnam")
+                        factory.customer("CUS005","Canon Vietnam", CustomerGroup.RETAIL)
 
                 )
 

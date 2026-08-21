@@ -7,6 +7,7 @@ import com.github.xnaut97.wms.entity.material.Supplier;
 import com.github.xnaut97.wms.entity.material.Material;
 import com.github.xnaut97.wms.entity.user.Role;
 import com.github.xnaut97.wms.entity.user.User;
+import com.github.xnaut97.wms.enums.CustomerGroup;
 import com.github.xnaut97.wms.enums.RoleType;
 import com.github.xnaut97.wms.enums.SupplierGroup;
 import lombok.RequiredArgsConstructor;
@@ -102,12 +103,19 @@ public class SampleDataFactory {
 
     public Customer customer(
             String code,
-            String name
+            String name,
+            CustomerGroup customerGroup
     ) {
 
         Customer customer = new Customer();
 
+        customer.setCode(code);
+
         customer.setName(name);
+
+        customer.setCustomerGroup(customerGroup);
+
+        customer.setReceiverName("Nguyen Van B");
 
         customer.setPhone("0911111111");
 
