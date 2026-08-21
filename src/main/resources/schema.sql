@@ -87,3 +87,71 @@ SET @stmt := IF(@suppliers_table_exists > 0 AND @suppliers_note_exists = 0, 'ALT
 PREPARE suppliers_note_add FROM @stmt;
 EXECUTE suppliers_note_add;
 DEALLOCATE PREPARE suppliers_note_add;
+
+SET @customers_table_exists := (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers');
+
+SET @customers_code_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers' AND COLUMN_NAME = 'code');
+
+SET @stmt := IF(@customers_table_exists > 0 AND @customers_code_exists = 0, 'ALTER TABLE customers ADD COLUMN code VARCHAR(30) NULL', 'SELECT 1');
+PREPARE customers_code_add FROM @stmt;
+EXECUTE customers_code_add;
+DEALLOCATE PREPARE customers_code_add;
+
+SET @stmt := IF(@customers_table_exists > 0, 'UPDATE customers SET code = CONCAT(''KH'', LPAD(id, 4, ''0'')) WHERE code IS NULL OR code = ''''', 'SELECT 1');
+PREPARE customers_code_backfill FROM @stmt;
+EXECUTE customers_code_backfill;
+DEALLOCATE PREPARE customers_code_backfill;
+
+SET @customers_code_nullable := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers' AND COLUMN_NAME = 'code' AND IS_NULLABLE = 'YES');
+
+SET @stmt := IF(@customers_code_nullable > 0, 'ALTER TABLE customers MODIFY COLUMN code VARCHAR(30) NOT NULL', 'SELECT 1');
+PREPARE customers_code_require FROM @stmt;
+EXECUTE customers_code_require;
+DEALLOCATE PREPARE customers_code_require;
+
+SET @customers_code_indexed := (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers' AND COLUMN_NAME = 'code');
+
+SET @stmt := IF(@customers_table_exists > 0 AND @customers_code_indexed = 0, 'ALTER TABLE customers ADD CONSTRAINT uk_customers_code UNIQUE (code)', 'SELECT 1');
+PREPARE customers_code_unique FROM @stmt;
+EXECUTE customers_code_unique;
+DEALLOCATE PREPARE customers_code_unique;
+
+SET @customers_customer_group_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers' AND COLUMN_NAME = 'customer_group');
+
+SET @stmt := IF(@customers_table_exists > 0 AND @customers_customer_group_exists = 0, 'ALTER TABLE customers ADD COLUMN customer_group VARCHAR(32) NULL', 'SELECT 1');
+PREPARE customers_customer_group_add FROM @stmt;
+EXECUTE customers_customer_group_add;
+DEALLOCATE PREPARE customers_customer_group_add;
+
+SET @stmt := IF(@customers_table_exists > 0, 'UPDATE customers SET customer_group = ''RETAIL'' WHERE customer_group IS NULL OR customer_group NOT IN (''AGENT'', ''PROJECT'', ''RETAIL'')', 'SELECT 1');
+PREPARE customers_customer_group_backfill FROM @stmt;
+EXECUTE customers_customer_group_backfill;
+DEALLOCATE PREPARE customers_customer_group_backfill;
+
+SET @customers_customer_group_nullable := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers' AND COLUMN_NAME = 'customer_group' AND IS_NULLABLE = 'YES');
+
+SET @stmt := IF(@customers_customer_group_nullable > 0, 'ALTER TABLE customers MODIFY COLUMN customer_group VARCHAR(32) NOT NULL', 'SELECT 1');
+PREPARE customers_customer_group_require FROM @stmt;
+EXECUTE customers_customer_group_require;
+DEALLOCATE PREPARE customers_customer_group_require;
+
+SET @customers_receiver_name_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers' AND COLUMN_NAME = 'receiver_name');
+
+SET @stmt := IF(@customers_table_exists > 0 AND @customers_receiver_name_exists = 0, 'ALTER TABLE customers ADD COLUMN receiver_name VARCHAR(100) NULL', 'SELECT 1');
+PREPARE customers_receiver_name_add FROM @stmt;
+EXECUTE customers_receiver_name_add;
+DEALLOCATE PREPARE customers_receiver_name_add;
+
+SET @customers_note_exists := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers' AND COLUMN_NAME = 'note');
+
+SET @stmt := IF(@customers_table_exists > 0 AND @customers_note_exists = 0, 'ALTER TABLE customers ADD COLUMN note VARCHAR(1000) NULL', 'SELECT 1');
+PREPARE customers_note_add FROM @stmt;
+EXECUTE customers_note_add;
+DEALLOCATE PREPARE customers_note_add;
+
+SET @customers_email_required := (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers' AND COLUMN_NAME = 'email' AND IS_NULLABLE = 'NO');
+
+SET @stmt := IF(@customers_email_required > 0, 'ALTER TABLE customers MODIFY COLUMN email VARCHAR(255) NULL', 'SELECT 1');
+PREPARE customers_email_relax FROM @stmt;
+EXECUTE customers_email_relax;
+DEALLOCATE PREPARE customers_email_relax;
