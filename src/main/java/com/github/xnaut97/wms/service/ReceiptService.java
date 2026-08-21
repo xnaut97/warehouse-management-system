@@ -117,6 +117,11 @@ public class ReceiptService {
 
         repository.save(receipt);
 
+        items.stream()
+                .map(item -> item.getMaterial().getId())
+                .distinct()
+                .forEach(materialService::recalculateAveragePrice);
+
     }
 
     @Audit(
