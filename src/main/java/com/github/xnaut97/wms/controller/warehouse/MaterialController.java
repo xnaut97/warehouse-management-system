@@ -19,7 +19,7 @@ public class MaterialController {
     private final MaterialService service;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_STAFF','EXECUTIVE_BOARD','ACCOUNTANT')")
     public ApiResponse<PageResponse<MaterialResponse>> getAll(
             Pageable pageable
     ) {
@@ -32,7 +32,7 @@ public class MaterialController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_STAFF','EXECUTIVE_BOARD','ACCOUNTANT')")
     public ApiResponse<MaterialResponse> getById(
             @PathVariable Long id
     ) {
@@ -85,7 +85,7 @@ public class MaterialController {
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_STAFF','EXECUTIVE_BOARD','ACCOUNTANT')")
     public ApiResponse<PageResponse<MaterialResponse>> search(
             @RequestParam String keyword,
             Pageable pageable
