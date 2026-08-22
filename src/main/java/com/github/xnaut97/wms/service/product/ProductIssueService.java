@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -152,15 +153,6 @@ public class ProductIssueService {
 
         validateDraft(issue);
 
-        if (itemRepository.existsByIssueIdAndProductId(
-                issueId,
-                request.getProductId()
-        )) {
-            throw new BusinessException(
-                    "Sản phẩm đã tồn tại trong phiếu xuất."
-            );
-        }
-
         Product product =
                 productService.findProductById(
                         request.getProductId()
@@ -173,7 +165,8 @@ public class ProductIssueService {
                         issue,
                         product,
                         lotNumber,
-                        request.getQuantity()
+                        request.getQuantity(),
+                        null
                 );
 
         ProductIssueItem item =
@@ -235,7 +228,8 @@ public class ProductIssueService {
                         issue,
                         item.getProduct(),
                         lotNumber,
-                        request.getQuantity()
+                        request.getQuantity(),
+                        item.getId()
                 );
 
         item.setQuantity(request.getQuantity());
@@ -364,15 +358,31 @@ public class ProductIssueService {
             ProductInventory inventory =
                     findInventory(issue, item);
 
+            BigDecimal requested =
+                    items.stream()
+                            .filter(other ->
+                                    other.getProduct().getId()
+                                            .equals(item.getProduct().getId())
+                            )
+                            .filter(other ->
+                                    Objects.equals(
+                                            normalizeLot(other.getLotNumber()),
+                                            normalizeLot(item.getLotNumber())
+                                    )
+                            )
+                            .map(ProductIssueItem::getQuantity)
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
             if (inventory.getQuantity()
-                    .compareTo(item.getQuantity()) < 0) {
+                    .compareTo(requested) < 0) {
 
                 throw new BusinessException(
                         String.format(
                                 "Tồn kho sản phẩm %s không đủ. Có sẵn: %s, yêu cầu: %s",
                                 item.getProduct().getName(),
                                 inventory.getQuantity(),
-                                item.getQuantity()
+                                requested
                         )
                 );
             }
@@ -460,16 +470,27 @@ public class ProductIssueService {
             ProductIssue issue,
             Product product,
             String lotNumber,
-            BigDecimal quantity
+            BigDecimal quantity,
+            Long excludedItemId
     ) {
 
         ProductInventory inventory =
                 findInventory(issue, product, lotNumber);
 
-        BigDecimal available =
+        BigDecimal inStock =
                 inventory.getQuantity() != null
                         ? inventory.getQuantity()
                         : BigDecimal.ZERO;
+
+        BigDecimal available =
+                inStock.subtract(
+                        alreadyIssued(
+                                issue,
+                                product,
+                                lotNumber,
+                                excludedItemId
+                        )
+                );
 
         if (quantity != null
                 && available.compareTo(quantity) < 0) {
@@ -478,13 +499,40 @@ public class ProductIssueService {
                     String.format(
                             "Tồn kho sản phẩm %s không đủ. Có sẵn: %s, yêu cầu: %s",
                             product.getName(),
-                            available,
+                            available.max(BigDecimal.ZERO),
                             quantity
                     )
             );
         }
 
         return inventory;
+    }
+
+    private BigDecimal alreadyIssued(
+            ProductIssue issue,
+            Product product,
+            String lotNumber,
+            Long excludedItemId
+    ) {
+
+        return itemRepository.findByIssueId(issue.getId())
+                .stream()
+                .filter(existing ->
+                        !existing.getId().equals(excludedItemId)
+                )
+                .filter(existing ->
+                        existing.getProduct().getId()
+                                .equals(product.getId())
+                )
+                .filter(existing ->
+                        Objects.equals(
+                                normalizeLot(existing.getLotNumber()),
+                                lotNumber
+                        )
+                )
+                .map(ProductIssueItem::getQuantity)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private String normalizeLot(String lotNumber) {
