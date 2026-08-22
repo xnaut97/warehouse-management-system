@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Getter
@@ -22,11 +23,20 @@ public class OperationDocumentResponse {
 
     private DocumentType documentType;
 
+    private BigDecimal quantity;
+
+    private String partnerCode;
+
+    private String partnerName;
+
     public OperationDocumentResponse(
             Long itemId,
             Long documentId,
             String documentNo,
-            LocalDate documentDate
+            LocalDate documentDate,
+            BigDecimal quantity,
+            String partnerCode,
+            String partnerName
     ) {
 
         this.itemId = itemId;
@@ -36,6 +46,12 @@ public class OperationDocumentResponse {
         this.documentNo = documentNo;
 
         this.documentDate = documentDate;
+
+        this.quantity = quantity;
+
+        this.partnerCode = partnerCode;
+
+        this.partnerName = partnerName;
 
     }
 
