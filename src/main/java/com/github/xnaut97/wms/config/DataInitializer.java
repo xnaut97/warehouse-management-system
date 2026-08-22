@@ -2,10 +2,12 @@ package com.github.xnaut97.wms.config;
 
 import com.github.xnaut97.wms.seed.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
@@ -33,11 +35,25 @@ public class DataInitializer implements CommandLineRunner {
         customerSeeder.seed();
         materialSeeder.seed();
 
-        inventorySeeder.seed();
+        seedSampleData("inventory", inventorySeeder::seed);
 
-        receiptSeeder.seed();
-        issueSeeder.seed();
-        stocktakingSeeder.seed();
-        productSeeder.seed();
+        seedSampleData("receipt", receiptSeeder::seed);
+        seedSampleData("issue", issueSeeder::seed);
+        seedSampleData("stocktaking", stocktakingSeeder::seed);
+        seedSampleData("product", productSeeder::seed);
+    }
+
+    private void seedSampleData(String name, Runnable seeder) {
+
+        try {
+            seeder.run();
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Sample data seeding failed for '{}'; continuing application startup.",
+                    name,
+                    ex
+            );
+        }
+
     }
 }
