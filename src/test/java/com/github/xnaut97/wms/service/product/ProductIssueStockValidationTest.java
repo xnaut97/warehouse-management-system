@@ -162,6 +162,94 @@ class ProductIssueStockValidationTest {
     }
 
     @Test
+    void allowsASecondLineWhileTheLotStillHasStockLeft() {
+
+        service.addItem(
+                issue.getId(),
+                addRequest(LOT_A, "3", null)
+        );
+
+        ProductIssueItemResponse second =
+                service.addItem(
+                        issue.getId(),
+                        addRequest(LOT_A, "7", null)
+                );
+
+        assertThat(second.getQuantity())
+                .isEqualByComparingTo("7");
+    }
+
+    @Test
+    void rejectsASecondLineThatExceedsWhatTheLotHasLeft() {
+
+        service.addItem(
+                issue.getId(),
+                addRequest(LOT_A, "3", null)
+        );
+
+        assertThatThrownBy(() ->
+                service.addItem(
+                        issue.getId(),
+                        addRequest(LOT_A, "8", null)
+                )
+        )
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("không đủ")
+                .hasMessageContaining("7");
+    }
+
+    @Test
+    void countsOnlyTheSameLotTowardsWhatTheDocumentAlreadyTakes() {
+
+        service.addItem(
+                issue.getId(),
+                addRequest(LOT_B, "5", null)
+        );
+
+        ProductIssueItemResponse response =
+                service.addItem(
+                        issue.getId(),
+                        addRequest(LOT_A, "10", null)
+                );
+
+        assertThat(response.getQuantity())
+                .isEqualByComparingTo("10");
+    }
+
+    @Test
+    void confirmRejectsTwoLinesThatTogetherExceedTheLotStock() {
+
+        service.addItem(
+                issue.getId(),
+                addRequest(LOT_A, "6", null)
+        );
+
+        ProductIssueItemResponse second =
+                service.addItem(
+                        issue.getId(),
+                        addRequest(LOT_A, "4", null)
+                );
+
+        inventoryRepository
+                .findByWarehouseProductAndLot(
+                        issue.getWarehouse().getId(),
+                        product.getId(),
+                        LOT_A
+                )
+                .orElseThrow()
+                .setQuantity(new BigDecimal("8"));
+
+        assertThatThrownBy(() ->
+                service.confirm(issue.getId())
+        )
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("không đủ");
+
+        assertThat(second.getQuantity())
+                .isEqualByComparingTo("4");
+    }
+
+    @Test
     void rejectsALotThatDoesNotExistInTheWarehouse() {
 
         assertThatThrownBy(() ->

@@ -13,8 +13,6 @@ public interface ProductIssueItemRepository extends JpaRepository<ProductIssueIt
 
     List<ProductIssueItem> findByIssueId(Long issueId);
 
-    boolean existsByIssueIdAndProductId(Long issueId, Long productId);
-
     @Query("""
             SELECT SUM(i.quantity * i.unitPrice) / NULLIF(SUM(i.quantity), 0)
             FROM ProductIssueItem i

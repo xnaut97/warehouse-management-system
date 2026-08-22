@@ -1,5 +1,6 @@
 package com.github.xnaut97.wms.dto.issue;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,6 +15,7 @@ public class AddIssueItemRequest {
     private Long materialId;
 
     @NotNull
+    @DecimalMin("0.01")
     private BigDecimal quantity;
 
     private BigDecimal unitPrice;

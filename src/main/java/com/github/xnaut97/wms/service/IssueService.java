@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -119,19 +120,16 @@ public class IssueService {
 
         validateDraft(issue);
 
-        if(itemRepository.existsByIssueIdAndMaterialId(
-                issueId,
-                request.getMaterialId())){
-
-            throw new BusinessException(
-                    "Nguyên liệu đã tồn tại trong phiếu xuất này."
-            );
-
-        }
-
         Material material =
                 materialService.findMaterialById(
                         request.getMaterialId());
+
+        validateAvailableStock(
+                issue,
+                material,
+                request.getQuantity(),
+                null
+        );
 
         BigDecimal unitPrice = request.getUnitPrice();
         BigDecimal amount = unitPrice != null
@@ -182,6 +180,7 @@ public class IssueService {
         return IssueDetailResponse.builder()
                 .id(issue.getId())
                 .issueNo(issue.getIssueNo())
+                .warehouseId(issue.getWarehouse().getId())
                 .warehouse(issue.getWarehouse().getName())
                 .customer(issue.getCustomer() != null ? issue.getCustomer().getName() : null)
                 .issueDate(issue.getIssueDate())
@@ -209,6 +208,21 @@ public class IssueService {
                                 new BusinessException(
                                         "Không tìm thấy dòng phiếu xuất."
                                 ));
+
+        if (!item.getIssue().getId().equals(issueId)) {
+
+            throw new BusinessException(
+                    "Dòng phiếu xuất không thuộc phiếu này."
+            );
+
+        }
+
+        validateAvailableStock(
+                issue,
+                item.getMaterial(),
+                request.getQuantity(),
+                item.getId()
+        );
 
         BigDecimal unitPrice = request.getUnitPrice();
         BigDecimal amount = unitPrice != null
@@ -345,19 +359,21 @@ public class IssueService {
             GoodsIssue issue,
             GoodsIssueItem item
     ){
-        MaterialInventory materialInventory = materialInventoryRepository
-                        .findByWarehouseIdAndMaterialId(
-                                issue.getWarehouse().getId(),
-                                item.getMaterial().getId()
-                        )
-                        .orElseThrow(() ->
-                                new BusinessException(
-                                        String.format("Không tìm thấy tồn kho cho kho %d, nguyên liệu %d",
-                                                issue.getWarehouse().getId(),
-                                                item.getMaterial().getId())
-                                ));
+        MaterialInventory materialInventory =
+                findInventory(issue, item.getMaterial());
 
-        if (materialInventory.getQuantity().compareTo(item.getQuantity()) < 0) {
+        BigDecimal requested =
+                itemRepository.findByIssueId(issue.getId())
+                        .stream()
+                        .filter(other ->
+                                other.getMaterial().getId()
+                                        .equals(item.getMaterial().getId())
+                        )
+                        .map(GoodsIssueItem::getQuantity)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (materialInventory.getQuantity().compareTo(requested) < 0) {
 
             throw new BusinessException(
                     String.format(
@@ -365,11 +381,98 @@ public class IssueService {
                             materialInventory.getId(),
                             item.getMaterial().getName(),
                             materialInventory.getQuantity(),
-                            item.getQuantity()
+                            requested
                     )
             );
 
         }
+    }
+
+    private MaterialInventory findInventory(
+            GoodsIssue issue,
+            Material material
+    ) {
+
+        return materialInventoryRepository
+                .findByWarehouseIdAndMaterialId(
+                        issue.getWarehouse().getId(),
+                        material.getId()
+                )
+                .orElseThrow(() ->
+                        new BusinessException(
+                                String.format(
+                                        "Không tìm thấy tồn kho nguyên liệu %s trong kho %s.",
+                                        material.getName(),
+                                        issue.getWarehouse().getName()
+                                )
+                        ));
+
+    }
+
+    /**
+     * Guards every write path of the issue document against the real stock of
+     * the warehouse the document belongs to, netting out what the document
+     * already takes from the same material.
+     */
+    private void validateAvailableStock(
+            GoodsIssue issue,
+            Material material,
+            BigDecimal quantity,
+            Long excludedItemId
+    ) {
+
+        MaterialInventory inventory =
+                findInventory(issue, material);
+
+        BigDecimal inStock =
+                inventory.getQuantity() != null
+                        ? inventory.getQuantity()
+                        : BigDecimal.ZERO;
+
+        BigDecimal available =
+                inStock.subtract(
+                        alreadyIssued(
+                                issue,
+                                material,
+                                excludedItemId
+                        )
+                );
+
+        if (quantity != null
+                && available.compareTo(quantity) < 0) {
+
+            throw new BusinessException(
+                    String.format(
+                            "Tồn kho nguyên liệu %s không đủ. Có sẵn: %s, yêu cầu: %s",
+                            material.getName(),
+                            available.max(BigDecimal.ZERO),
+                            quantity
+                    )
+            );
+
+        }
+
+    }
+
+    private BigDecimal alreadyIssued(
+            GoodsIssue issue,
+            Material material,
+            Long excludedItemId
+    ) {
+
+        return itemRepository.findByIssueId(issue.getId())
+                .stream()
+                .filter(existing ->
+                        !existing.getId().equals(excludedItemId)
+                )
+                .filter(existing ->
+                        existing.getMaterial().getId()
+                                .equals(material.getId())
+                )
+                .map(GoodsIssueItem::getQuantity)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
     }
 
     private void deductInventory(

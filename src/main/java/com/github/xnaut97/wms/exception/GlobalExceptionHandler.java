@@ -1,6 +1,7 @@
 package com.github.xnaut97.wms.exception;
 
 import com.github.xnaut97.wms.dto.common.ApiResponse;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -44,6 +45,18 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.badRequest()
                 .body(ApiResponse.error(message));
+
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> dataIntegrity(
+            DataIntegrityViolationException ex
+    ) {
+
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.error(
+                        "Dữ liệu tham chiếu không hợp lệ hoặc không còn tồn tại."
+                ));
 
     }
 

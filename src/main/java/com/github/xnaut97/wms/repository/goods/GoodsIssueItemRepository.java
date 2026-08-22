@@ -16,11 +16,6 @@ public interface GoodsIssueItemRepository
 
     List<GoodsIssueItem> findByIssueId(Long issueId);
 
-    boolean existsByIssueIdAndMaterialId(
-            Long issueId,
-            Long materialId
-    );
-
     @Query("""
             SELECT COALESCE(SUM(i.quantity),0)
             FROM GoodsIssueItem i

@@ -16,6 +16,8 @@ public class IssueDetailResponse {
 
     private String issueNo;
 
+    private Long warehouseId;
+
     private String warehouse;
 
     private String customer;
