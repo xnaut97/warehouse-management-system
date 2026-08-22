@@ -155,3 +155,45 @@ SET @stmt := IF(@customers_email_required > 0, 'ALTER TABLE customers MODIFY COL
 PREPARE customers_email_relax FROM @stmt;
 EXECUTE customers_email_relax;
 DEALLOCATE PREPARE customers_email_relax;
+
+SET @gri_raw_material_fk := (SELECT CONSTRAINT_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'goods_receipt_items' AND REFERENCED_TABLE_NAME = 'raw_materials' LIMIT 1);
+
+SET @stmt := IF(@gri_raw_material_fk IS NOT NULL, CONCAT('ALTER TABLE goods_receipt_items DROP FOREIGN KEY `', @gri_raw_material_fk, '`'), 'SELECT 1');
+PREPARE gri_raw_material_fk_drop FROM @stmt;
+EXECUTE gri_raw_material_fk_drop;
+DEALLOCATE PREPARE gri_raw_material_fk_drop;
+
+SET @gii_raw_material_fk := (SELECT CONSTRAINT_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'goods_issue_items' AND REFERENCED_TABLE_NAME = 'raw_materials' LIMIT 1);
+
+SET @stmt := IF(@gii_raw_material_fk IS NOT NULL, CONCAT('ALTER TABLE goods_issue_items DROP FOREIGN KEY `', @gii_raw_material_fk, '`'), 'SELECT 1');
+PREPARE gii_raw_material_fk_drop FROM @stmt;
+EXECUTE gii_raw_material_fk_drop;
+DEALLOCATE PREPARE gii_raw_material_fk_drop;
+
+SET @it_raw_material_fk := (SELECT CONSTRAINT_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'inventory_transactions' AND REFERENCED_TABLE_NAME = 'raw_materials' LIMIT 1);
+
+SET @stmt := IF(@it_raw_material_fk IS NOT NULL, CONCAT('ALTER TABLE inventory_transactions DROP FOREIGN KEY `', @it_raw_material_fk, '`'), 'SELECT 1');
+PREPARE it_raw_material_fk_drop FROM @stmt;
+EXECUTE it_raw_material_fk_drop;
+DEALLOCATE PREPARE it_raw_material_fk_drop;
+
+SET @inv_raw_material_fk := (SELECT CONSTRAINT_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'inventories' AND REFERENCED_TABLE_NAME = 'raw_materials' LIMIT 1);
+
+SET @stmt := IF(@inv_raw_material_fk IS NOT NULL, CONCAT('ALTER TABLE inventories DROP FOREIGN KEY `', @inv_raw_material_fk, '`'), 'SELECT 1');
+PREPARE inv_raw_material_fk_drop FROM @stmt;
+EXECUTE inv_raw_material_fk_drop;
+DEALLOCATE PREPARE inv_raw_material_fk_drop;
+
+SET @sti_raw_material_fk := (SELECT CONSTRAINT_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'stocktaking_item' AND REFERENCED_TABLE_NAME = 'raw_materials' LIMIT 1);
+
+SET @stmt := IF(@sti_raw_material_fk IS NOT NULL, CONCAT('ALTER TABLE stocktaking_item DROP FOREIGN KEY `', @sti_raw_material_fk, '`'), 'SELECT 1');
+PREPARE sti_raw_material_fk_drop FROM @stmt;
+EXECUTE sti_raw_material_fk_drop;
+DEALLOCATE PREPARE sti_raw_material_fk_drop;
+
+SET @bi_raw_material_fk := (SELECT CONSTRAINT_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'bom_items' AND REFERENCED_TABLE_NAME = 'raw_materials' LIMIT 1);
+
+SET @stmt := IF(@bi_raw_material_fk IS NOT NULL, CONCAT('ALTER TABLE bom_items DROP FOREIGN KEY `', @bi_raw_material_fk, '`'), 'SELECT 1');
+PREPARE bi_raw_material_fk_drop FROM @stmt;
+EXECUTE bi_raw_material_fk_drop;
+DEALLOCATE PREPARE bi_raw_material_fk_drop;

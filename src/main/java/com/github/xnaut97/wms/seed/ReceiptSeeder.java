@@ -6,6 +6,7 @@ import com.github.xnaut97.wms.entity.common.Warehouse;
 import com.github.xnaut97.wms.entity.material.Material;
 import com.github.xnaut97.wms.entity.material.Supplier;
 import com.github.xnaut97.wms.repository.MaterialRepository;
+import com.github.xnaut97.wms.repository.goods.GoodsReceiptRepository;
 import com.github.xnaut97.wms.repository.SupplierRepository;
 import com.github.xnaut97.wms.repository.WarehouseRepository;
 import com.github.xnaut97.wms.service.ReceiptService;
@@ -26,11 +27,14 @@ public class ReceiptSeeder {
 
     private final ReceiptService receiptService;
 
+    private final GoodsReceiptRepository goodsReceiptRepository;
     private final SupplierRepository supplierRepository;
     private final WarehouseRepository warehouseRepository;
     private final MaterialRepository materialRepository;
 
     public void seed() {
+        if (goodsReceiptRepository.count() > 0) return;
+
         if (materialRepository.count() == 0) return;
 
         List<Supplier> suppliers = supplierRepository.findAll();
