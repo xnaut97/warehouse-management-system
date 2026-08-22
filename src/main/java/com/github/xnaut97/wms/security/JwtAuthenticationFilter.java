@@ -52,64 +52,48 @@ public class JwtAuthenticationFilter
 
         try {
 
-            if (!jwtService.isValid(token)) {
+            if (jwtService.isValid(token)) {
 
-                SecurityContextHolder.clearContext();
+                String username = jwtService.extractUsername(token);
 
-                response.sendError(
+                var user = userDetailsService.loadUserByUsername(username);
 
-                        HttpServletResponse.SC_UNAUTHORIZED,
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(
 
-                        "JWT không hợp lệ hoặc đã hết hạn"
+                                user,
+
+                                null,
+
+                                user.getAuthorities()
+
+                        );
+
+                auth.setDetails(
+
+                        new WebAuthenticationDetailsSource()
+
+                                .buildDetails(request)
 
                 );
 
-                return;
+                SecurityContextHolder
+                        .getContext()
+                        .setAuthentication(auth);
+
+            } else {
+
+                SecurityContextHolder.clearContext();
 
             }
-
-            String username = jwtService.extractUsername(token);
-
-            var user = userDetailsService.loadUserByUsername(username);
-
-            UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(
-
-                            user,
-
-                            null,
-
-                            user.getAuthorities()
-
-                    );
-
-            auth.setDetails(
-
-                    new WebAuthenticationDetailsSource()
-
-                            .buildDetails(request)
-
-            );
-
-            SecurityContextHolder
-                    .getContext()
-                    .setAuthentication(auth);
-
-            filterChain.doFilter(request, response);
 
         } catch (Exception ex) {
 
             SecurityContextHolder.clearContext();
 
-            response.sendError(
-
-                    HttpServletResponse.SC_UNAUTHORIZED,
-
-                    "JWT không hợp lệ hoặc đã hết hạn"
-
-            );
-
         }
+
+        filterChain.doFilter(request, response);
 
     }
 
