@@ -464,17 +464,22 @@ public interface OperationReportRepository
     );
 
     @Query("""
-            SELECT DISTINCT new com.github.xnaut97.wms.dto.report.operation.OperationDocumentResponse(
+            SELECT new com.github.xnaut97.wms.dto.report.operation.OperationDocumentResponse(
                 i.material.id,
                 r.id,
                 r.receiptNo,
-                r.receiptDate
+                r.receiptDate,
+                COALESCE(SUM(i.quantity),0),
+                s.code,
+                s.name
             )
             FROM GoodsReceiptItem i
             JOIN i.receipt r
+            LEFT JOIN r.supplier s
             WHERE r.status = :status
               AND r.warehouse.id = :warehouseId
               AND r.receiptDate BETWEEN :fromDate AND :toDate
+            GROUP BY i.material.id, r.id, r.receiptNo, r.receiptDate, s.code, s.name
             """)
     List<OperationDocumentResponse> getMaterialReceiptDocuments(
             @Param("status") ReceiptStatus status,
@@ -484,17 +489,22 @@ public interface OperationReportRepository
     );
 
     @Query("""
-            SELECT DISTINCT new com.github.xnaut97.wms.dto.report.operation.OperationDocumentResponse(
+            SELECT new com.github.xnaut97.wms.dto.report.operation.OperationDocumentResponse(
                 i.material.id,
                 g.id,
                 g.issueNo,
-                g.issueDate
+                g.issueDate,
+                COALESCE(SUM(i.quantity),0),
+                c.code,
+                c.name
             )
             FROM GoodsIssueItem i
             JOIN i.issue g
+            LEFT JOIN g.customer c
             WHERE g.status = :status
               AND g.warehouse.id = :warehouseId
               AND g.issueDate BETWEEN :fromDate AND :toDate
+            GROUP BY i.material.id, g.id, g.issueNo, g.issueDate, c.code, c.name
             """)
     List<OperationDocumentResponse> getMaterialIssueDocuments(
             @Param("status") IssueStatus status,
@@ -504,17 +514,22 @@ public interface OperationReportRepository
     );
 
     @Query("""
-            SELECT DISTINCT new com.github.xnaut97.wms.dto.report.operation.OperationDocumentResponse(
+            SELECT new com.github.xnaut97.wms.dto.report.operation.OperationDocumentResponse(
                 i.product.id,
                 r.id,
                 r.receiptNo,
-                r.receiptDate
+                r.receiptDate,
+                COALESCE(SUM(i.quantity),0),
+                s.code,
+                s.name
             )
             FROM ProductReceiptItem i
             JOIN i.receipt r
+            LEFT JOIN r.supplier s
             WHERE r.status = :status
               AND r.warehouse.id = :warehouseId
               AND r.receiptDate BETWEEN :fromDate AND :toDate
+            GROUP BY i.product.id, r.id, r.receiptNo, r.receiptDate, s.code, s.name
             """)
     List<OperationDocumentResponse> getProductReceiptDocuments(
             @Param("status") ReceiptStatus status,
@@ -524,17 +539,22 @@ public interface OperationReportRepository
     );
 
     @Query("""
-            SELECT DISTINCT new com.github.xnaut97.wms.dto.report.operation.OperationDocumentResponse(
+            SELECT new com.github.xnaut97.wms.dto.report.operation.OperationDocumentResponse(
                 i.product.id,
                 g.id,
                 g.issueNo,
-                g.issueDate
+                g.issueDate,
+                COALESCE(SUM(i.quantity),0),
+                c.code,
+                c.name
             )
             FROM ProductIssueItem i
             JOIN i.issue g
+            LEFT JOIN g.customer c
             WHERE g.status = :status
               AND g.warehouse.id = :warehouseId
               AND g.issueDate BETWEEN :fromDate AND :toDate
+            GROUP BY i.product.id, g.id, g.issueNo, g.issueDate, c.code, c.name
             """)
     List<OperationDocumentResponse> getProductIssueDocuments(
             @Param("status") IssueStatus status,
