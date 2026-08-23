@@ -26,7 +26,7 @@ public class ProductStockController {
             @RequestParam
             Long warehouseId,
 
-            @RequestParam
+            @RequestParam(required = false)
             Long productId
 
     ) {

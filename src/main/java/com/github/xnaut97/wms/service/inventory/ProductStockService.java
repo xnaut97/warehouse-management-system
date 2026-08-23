@@ -16,8 +16,9 @@ public class ProductStockService {
     private final ProductInventoryRepository repository;
 
     /**
-     * Lots of a product that still have stock in the given warehouse,
-     * ordered by expiration date first so the UI can suggest FEFO.
+     * Lots that still have stock in the given warehouse, ordered by expiration
+     * date first so the UI can suggest FEFO. Without a product the whole
+     * warehouse is returned, which is what the issue forms select from.
      */
     @Transactional(readOnly = true)
     public List<ProductStockResponse> getAvailableLots(
@@ -25,11 +26,11 @@ public class ProductStockService {
             Long productId
     ) {
 
-        return repository.findAvailableLots(
-                        warehouseId,
-                        productId
-                )
-                .stream()
+        List<ProductInventory> lots = productId != null
+                ? repository.findAvailableLots(warehouseId, productId)
+                : repository.findAvailableLots(warehouseId);
+
+        return lots.stream()
                 .map(this::map)
                 .toList();
     }
