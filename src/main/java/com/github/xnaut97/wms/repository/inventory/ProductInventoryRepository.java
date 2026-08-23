@@ -59,6 +59,21 @@ public interface ProductInventoryRepository
     );
 
     @Query("""
+            SELECT i
+            FROM ProductInventory i
+            WHERE i.warehouse.id = :warehouseId
+              AND i.quantity > 0
+            ORDER BY
+                i.product.code ASC,
+                CASE WHEN i.expirationDate IS NULL THEN 1 ELSE 0 END ASC,
+                i.expirationDate ASC,
+                i.lotNumber ASC
+            """)
+    List<ProductInventory> findAvailableLots(
+            @Param("warehouseId") Long warehouseId
+    );
+
+    @Query("""
             SELECT COALESCE(SUM(i.quantity * i.product.averagePrice),0)
             FROM ProductInventory i
             """)
