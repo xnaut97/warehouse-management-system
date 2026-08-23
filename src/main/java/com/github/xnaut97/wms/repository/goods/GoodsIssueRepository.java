@@ -12,6 +12,8 @@ import java.util.List;
 public interface GoodsIssueRepository
         extends JpaRepository<GoodsIssue, Long> {
 
+    boolean existsByCustomerCode(String code);
+
     long countByIssueDateBetween(
             LocalDate start,
             LocalDate end

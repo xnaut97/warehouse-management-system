@@ -7,6 +7,7 @@ import com.github.xnaut97.wms.entity.common.Warehouse;
 import com.github.xnaut97.wms.enums.StocktakingType;
 import com.github.xnaut97.wms.repository.MaterialRepository;
 import com.github.xnaut97.wms.repository.WarehouseRepository;
+import com.github.xnaut97.wms.repository.stocktaking.StocktakingRepository;
 import com.github.xnaut97.wms.service.stock.StocktakingService;
 import com.github.xnaut97.wms.service.warehouse.WarehouseService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class StocktakingSeeder {
 
     private final StocktakingService stocktakingService;
+    private final StocktakingRepository stocktakingRepository;
     private final WarehouseRepository warehouseRepository;
     private final MaterialRepository materialRepository;
 
@@ -37,6 +39,12 @@ public class StocktakingSeeder {
                 );
 
         if (materialWarehouse.isEmpty()) return;
+
+        if (stocktakingRepository.existsByWarehouseId(
+                materialWarehouse.get().getId()
+        )) {
+            return;
+        }
 
         ThreadLocalRandom random =
                 ThreadLocalRandom.current();

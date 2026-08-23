@@ -16,6 +16,27 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class MaterialSeeder {
 
+    public static final String MATERIAL_C1 = "MAT-C1";
+
+    public static final String MATERIAL_C2 = "MAT-C2";
+
+    public static final String MATERIAL_RESIN = "MAT-RESIN";
+
+    public static final String MATERIAL_HARDENER = "MAT-HARDENER";
+
+    public static final String MATERIAL_SOLVENT = "MAT-SOLVENT";
+
+    public static final String MATERIAL_PIGMENT = "MAT-PIGMENT";
+
+    public static final List<String> SCENARIO_MATERIAL_CODES = List.of(
+            MATERIAL_C1,
+            MATERIAL_C2,
+            MATERIAL_RESIN,
+            MATERIAL_HARDENER,
+            MATERIAL_SOLVENT,
+            MATERIAL_PIGMENT
+    );
+
     private final MaterialRepository repository;
 
     private final SupplierRepository supplierRepository;
@@ -25,15 +46,13 @@ public class MaterialSeeder {
     @Transactional
     public void seed() {
         if (supplierRepository.count() == 0) return;
-        if (repository.count() > 0) {
-            repository.findAll().forEach(material -> {
-                if (material.getMaximumStock() == null) {
-                    material.setMaximumStock(BigDecimal.ZERO);
-                    repository.save(material);
-                }
-            });
-            return;
-        }
+
+        repository.findAll().forEach(material -> {
+            if (material.getMaximumStock() == null) {
+                material.setMaximumStock(BigDecimal.ZERO);
+                repository.save(material);
+            }
+        });
 
         List<Supplier> suppliers = supplierRepository.findAll();
 
@@ -54,7 +73,14 @@ public class MaterialSeeder {
                         factory.material("RM007", "PVC Pipe", "Meter", new BigDecimal("12.50"), s5),
                         factory.material("RM008", "Bearing 6204", "Piece", new BigDecimal("22.80"), s5),
                         factory.material("RM009", "Control PCB", "Piece", new BigDecimal("285.00"), s2),
-                        factory.material("RM010", "Hex Bolt M8", "Piece", new BigDecimal("2.50"), s3)
+                        factory.material("RM010", "Hex Bolt M8", "Piece", new BigDecimal("2.50"), s3),
+
+                        factory.material(MATERIAL_C1, "Keo C1", "Kg", new BigDecimal("120.00"), s1),
+                        factory.material(MATERIAL_C2, "Keo C2", "Kg", new BigDecimal("135.00"), s1),
+                        factory.material(MATERIAL_RESIN, "Nhựa nền", "Kg", new BigDecimal("88.00"), s3),
+                        factory.material(MATERIAL_HARDENER, "Chất đóng rắn", "Kg", new BigDecimal("210.00"), s4),
+                        factory.material(MATERIAL_SOLVENT, "Dung môi pha loãng", "Liter", new BigDecimal("45.00"), s4),
+                        factory.material(MATERIAL_PIGMENT, "Bột màu", "Kg", new BigDecimal("310.00"), s5)
 
                 )
                 .filter(m -> !repository.existsByCode(m.getCode()))

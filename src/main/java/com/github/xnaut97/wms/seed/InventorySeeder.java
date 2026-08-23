@@ -35,6 +35,11 @@ public class InventorySeeder {
 
         for (Warehouse warehouse : warehouses) {
             for (Material material : materials) {
+                if (MaterialSeeder.SCENARIO_MATERIAL_CODES
+                        .contains(material.getCode())) {
+                    continue;
+                }
+
                 MaterialInventory materialInventory = new MaterialInventory();
                 materialInventory.setWarehouse(warehouse);
                 materialInventory.setMaterial(material);
