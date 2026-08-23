@@ -197,3 +197,38 @@ SET @stmt := IF(@bi_raw_material_fk IS NOT NULL, CONCAT('ALTER TABLE bom_items D
 PREPARE bi_raw_material_fk_drop FROM @stmt;
 EXECUTE bi_raw_material_fk_drop;
 DEALLOCATE PREPARE bi_raw_material_fk_drop;
+
+SET @pri_finished_product_fk := (SELECT CONSTRAINT_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'product_receipt_items' AND REFERENCED_TABLE_NAME = 'finished_products' LIMIT 1);
+
+SET @stmt := IF(@pri_finished_product_fk IS NOT NULL, CONCAT('ALTER TABLE product_receipt_items DROP FOREIGN KEY `', @pri_finished_product_fk, '`'), 'SELECT 1');
+PREPARE pri_finished_product_fk_drop FROM @stmt;
+EXECUTE pri_finished_product_fk_drop;
+DEALLOCATE PREPARE pri_finished_product_fk_drop;
+
+SET @pii_finished_product_fk := (SELECT CONSTRAINT_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'product_issue_items' AND REFERENCED_TABLE_NAME = 'finished_products' LIMIT 1);
+
+SET @stmt := IF(@pii_finished_product_fk IS NOT NULL, CONCAT('ALTER TABLE product_issue_items DROP FOREIGN KEY `', @pii_finished_product_fk, '`'), 'SELECT 1');
+PREPARE pii_finished_product_fk_drop FROM @stmt;
+EXECUTE pii_finished_product_fk_drop;
+DEALLOCATE PREPARE pii_finished_product_fk_drop;
+
+SET @pinv_finished_product_fk := (SELECT CONSTRAINT_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'product_inventories' AND REFERENCED_TABLE_NAME = 'finished_products' LIMIT 1);
+
+SET @stmt := IF(@pinv_finished_product_fk IS NOT NULL, CONCAT('ALTER TABLE product_inventories DROP FOREIGN KEY `', @pinv_finished_product_fk, '`'), 'SELECT 1');
+PREPARE pinv_finished_product_fk_drop FROM @stmt;
+EXECUTE pinv_finished_product_fk_drop;
+DEALLOCATE PREPARE pinv_finished_product_fk_drop;
+
+SET @sti_finished_product_fk := (SELECT CONSTRAINT_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'stocktaking_item' AND REFERENCED_TABLE_NAME = 'finished_products' LIMIT 1);
+
+SET @stmt := IF(@sti_finished_product_fk IS NOT NULL, CONCAT('ALTER TABLE stocktaking_item DROP FOREIGN KEY `', @sti_finished_product_fk, '`'), 'SELECT 1');
+PREPARE sti_finished_product_fk_drop FROM @stmt;
+EXECUTE sti_finished_product_fk_drop;
+DEALLOCATE PREPARE sti_finished_product_fk_drop;
+
+SET @bom_finished_product_fk := (SELECT CONSTRAINT_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'boms' AND REFERENCED_TABLE_NAME = 'finished_products' LIMIT 1);
+
+SET @stmt := IF(@bom_finished_product_fk IS NOT NULL, CONCAT('ALTER TABLE boms DROP FOREIGN KEY `', @bom_finished_product_fk, '`'), 'SELECT 1');
+PREPARE bom_finished_product_fk_drop FROM @stmt;
+EXECUTE bom_finished_product_fk_drop;
+DEALLOCATE PREPARE bom_finished_product_fk_drop;
