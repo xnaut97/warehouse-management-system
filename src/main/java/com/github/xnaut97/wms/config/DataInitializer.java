@@ -1,5 +1,6 @@
 package com.github.xnaut97.wms.config;
 
+import com.github.xnaut97.wms.seed.RoleSeeder;
 import com.github.xnaut97.wms.seed.UserSeeder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,11 +13,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
+    private final RoleSeeder roleSeeder;
     private final UserSeeder userSeeder;
 
     @Override
     public void run(String @NonNull ... args) {
 
+        roleSeeder.seed();
         userSeeder.seed();
     }
 
