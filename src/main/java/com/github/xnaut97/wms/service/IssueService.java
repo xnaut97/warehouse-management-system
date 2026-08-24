@@ -6,8 +6,8 @@ import com.github.xnaut97.wms.entity.common.Customer;
 import com.github.xnaut97.wms.entity.common.Warehouse;
 import com.github.xnaut97.wms.entity.goods.GoodsIssue;
 import com.github.xnaut97.wms.entity.goods.GoodsIssueItem;
-import com.github.xnaut97.wms.entity.inventory.MaterialInventory;
 import com.github.xnaut97.wms.entity.inventory.InventoryTransaction;
+import com.github.xnaut97.wms.entity.inventory.MaterialInventory;
 import com.github.xnaut97.wms.entity.material.Material;
 import com.github.xnaut97.wms.entity.user.User;
 import com.github.xnaut97.wms.enums.AuditAction;
@@ -17,8 +17,8 @@ import com.github.xnaut97.wms.enums.IssueStatus;
 import com.github.xnaut97.wms.exception.BusinessException;
 import com.github.xnaut97.wms.repository.goods.GoodsIssueItemRepository;
 import com.github.xnaut97.wms.repository.goods.GoodsIssueRepository;
-import com.github.xnaut97.wms.repository.inventory.MaterialInventoryRepository;
 import com.github.xnaut97.wms.repository.inventory.InventoryTransactionRepository;
+import com.github.xnaut97.wms.repository.inventory.MaterialInventoryRepository;
 import com.github.xnaut97.wms.service.user.UserService;
 import com.github.xnaut97.wms.service.warehouse.MaterialService;
 import com.github.xnaut97.wms.service.warehouse.WarehouseService;
@@ -277,7 +277,7 @@ public class IssueService {
         List<GoodsIssueItem> items =
                 itemRepository.findByIssueId(issueId);
 
-        if(items.isEmpty()){
+        if (items.isEmpty()) {
 
             throw new BusinessException(
                     "Phiếu xuất chưa có dòng hàng nào."
@@ -285,13 +285,13 @@ public class IssueService {
 
         }
 
-        for(GoodsIssueItem item : items){
+        for (GoodsIssueItem item : items) {
 
-            validateInventory(issue,item);
+            validateInventory(issue, item);
 
-            deductInventory(issue,item);
+            deductInventory(issue, item);
 
-            createInventoryTransaction(issue,item);
+            createInventoryTransaction(issue, item);
 
         }
 
@@ -354,11 +354,10 @@ public class IssueService {
     }
 
 
-
     private void validateInventory(
             GoodsIssue issue,
             GoodsIssueItem item
-    ){
+    ) {
         MaterialInventory materialInventory =
                 findInventory(issue, item.getMaterial());
 
@@ -478,7 +477,7 @@ public class IssueService {
     private void deductInventory(
             GoodsIssue issue,
             GoodsIssueItem item
-    ){
+    ) {
 
         MaterialInventory materialInventory =
                 materialInventoryRepository
