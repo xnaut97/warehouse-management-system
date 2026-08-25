@@ -2,6 +2,7 @@ package com.github.xnaut97.wms.controller.bom;
 
 import com.github.xnaut97.wms.dto.bom.BOMRequest;
 import com.github.xnaut97.wms.dto.bom.BOMResponse;
+import com.github.xnaut97.wms.dto.bom.UpdateBOMRequest;
 import com.github.xnaut97.wms.dto.common.ApiResponse;
 import com.github.xnaut97.wms.service.bom.BOMService;
 import jakarta.validation.Valid;
@@ -67,7 +68,7 @@ public class BOMController {
             @PathVariable Long id,
             @RequestBody
             @Valid
-            BOMRequest request
+            UpdateBOMRequest request
     ) {
 
         return ApiResponse.success(

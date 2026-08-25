@@ -5,6 +5,7 @@ import com.github.xnaut97.wms.dto.bom.BOMItemRequest;
 import com.github.xnaut97.wms.dto.bom.BOMItemResponse;
 import com.github.xnaut97.wms.dto.bom.BOMRequest;
 import com.github.xnaut97.wms.dto.bom.BOMResponse;
+import com.github.xnaut97.wms.dto.bom.UpdateBOMRequest;
 import com.github.xnaut97.wms.entity.bom.BOM;
 import com.github.xnaut97.wms.entity.bom.BOMItem;
 import com.github.xnaut97.wms.entity.material.Material;
@@ -117,7 +118,7 @@ public class BOMService {
     )
     public BOMResponse update(
             Long id,
-            BOMRequest request
+            UpdateBOMRequest request
     ) {
 
         BOM bom = findBOMById(id);
@@ -127,15 +128,9 @@ public class BOMService {
                 request.getCode()
         );
 
-        Product product =
-                productService.findActiveProductById(
-                        request.getProductId()
-                );
-
         validateItems(request.getItems());
 
         bom.setCode(request.getCode());
-        bom.setProduct(product);
 
         bom.getItems().clear();
 
