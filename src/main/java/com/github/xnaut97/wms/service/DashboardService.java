@@ -9,6 +9,8 @@ import com.github.xnaut97.wms.repository.goods.GoodsReceiptItemRepository;
 import com.github.xnaut97.wms.repository.inventory.MaterialInventoryRepository;
 import com.github.xnaut97.wms.repository.inventory.ProductInventoryRepository;
 import com.github.xnaut97.wms.repository.inventory.InventoryTransactionRepository;
+import com.github.xnaut97.wms.repository.product.ProductIssueItemRepository;
+import com.github.xnaut97.wms.repository.product.ProductReceiptItemRepository;
 import com.github.xnaut97.wms.repository.product.ProductRepository;
 import com.github.xnaut97.wms.repository.stocktaking.StocktakingItemRepository;
 import com.github.xnaut97.wms.repository.stocktaking.StocktakingRepository;
@@ -56,6 +58,10 @@ public class DashboardService {
     private final GoodsReceiptItemRepository receiptItemRepository;
 
     private final GoodsIssueItemRepository issueItemRepository;
+
+    private final ProductReceiptItemRepository productReceiptItemRepository;
+
+    private final ProductIssueItemRepository productIssueItemRepository;
 
     private final InventoryTransactionRepository transactionRepository;
 
@@ -150,14 +156,18 @@ public class DashboardService {
                 ),
 
                 getOrZero(
-                        receiptItemRepository.getTotalQuantityByReceiptStatus(
-                                ReceiptStatus.CONFIRMED
+                        receiptItemRepository.getTotalQuantity()
+                ).add(
+                        getOrZero(
+                                productReceiptItemRepository.getTotalQuantity()
                         )
                 ),
 
                 getOrZero(
-                        issueItemRepository.getTotalQuantityByIssueStatus(
-                                IssueStatus.CONFIRMED
+                        issueItemRepository.getTotalQuantity()
+                ).add(
+                        getOrZero(
+                                productIssueItemRepository.getTotalQuantity()
                         )
                 ),
 

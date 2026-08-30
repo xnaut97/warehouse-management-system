@@ -26,4 +26,10 @@ public interface ProductIssueItemRepository extends JpaRepository<ProductIssueIt
             @Param("status") IssueStatus status
     );
 
+    @Query("""
+            SELECT COALESCE(SUM(i.quantity),0)
+            FROM ProductIssueItem i
+            """)
+    BigDecimal getTotalQuantity();
+
 }
