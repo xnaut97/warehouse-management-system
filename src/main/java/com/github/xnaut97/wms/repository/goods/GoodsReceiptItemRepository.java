@@ -98,4 +98,11 @@ public interface GoodsReceiptItemRepository
             LocalDate deadline
 
     );
+
+    @Query("""
+            SELECT COALESCE(SUM(i.quantity),0)
+            FROM GoodsReceiptItem i
+            """)
+    BigDecimal getTotalQuantity();
+
 }

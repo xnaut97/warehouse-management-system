@@ -52,4 +52,10 @@ public interface GoodsIssueItemRepository
 
     );
 
+    @Query("""
+            SELECT COALESCE(SUM(i.quantity),0)
+            FROM GoodsIssueItem i
+            """)
+    BigDecimal getTotalQuantity();
+
 }
