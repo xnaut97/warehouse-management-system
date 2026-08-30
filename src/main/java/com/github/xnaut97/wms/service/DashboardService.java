@@ -7,6 +7,7 @@ import com.github.xnaut97.wms.repository.goods.GoodsIssueItemRepository;
 import com.github.xnaut97.wms.repository.goods.GoodsReceiptRepository;
 import com.github.xnaut97.wms.repository.goods.GoodsReceiptItemRepository;
 import com.github.xnaut97.wms.repository.inventory.MaterialInventoryRepository;
+import com.github.xnaut97.wms.repository.inventory.ProductInventoryRepository;
 import com.github.xnaut97.wms.repository.inventory.InventoryTransactionRepository;
 import com.github.xnaut97.wms.repository.product.ProductRepository;
 import com.github.xnaut97.wms.repository.stocktaking.StocktakingItemRepository;
@@ -45,6 +46,8 @@ public class DashboardService {
     private final ProductRepository productRepository;
 
     private final MaterialInventoryRepository materialInventoryRepository;
+
+    private final ProductInventoryRepository productInventoryRepository;
 
     private final GoodsReceiptRepository receiptRepository;
 
@@ -121,7 +124,7 @@ public class DashboardService {
 
                 .totalInventoryValue(
                         getOrZero(
-                                materialInventoryRepository.getTotalInventoryValue()
+                                getTotalInventoryValue()
                         )
                 )
 
@@ -143,7 +146,7 @@ public class DashboardService {
                 productRepository.count(),
 
                 getOrZero(
-                        materialInventoryRepository.getTotalInventoryValue()
+                        getTotalInventoryValue()
                 ),
 
                 getOrZero(
@@ -238,11 +241,11 @@ public class DashboardService {
         return InventoryAnalysisResponse.builder()
 
                 .materialInventory(
-                        materialRepository.count()
+                        getTotalInventoryQuantity()
                 )
 
                 .productInventory(
-                        productRepository.count()
+                        getProductInventoryQuantity()
                 )
 
                 .stockIn(
@@ -258,9 +261,15 @@ public class DashboardService {
                 )
 
                 .inventoryValue(
-                        getOrZero(
-                                materialInventoryRepository.getTotalInventoryValue()
-                        )
+                        getTotalInventoryValue()
+                )
+
+                .materialInventoryValue(
+                        getMaterialInventoryValue()
+                )
+
+                .productInventoryValue(
+                        getProductInventoryValue()
                 )
 
                 .build();
@@ -454,7 +463,7 @@ public class DashboardService {
     @Transactional
     public List<InventoryTrendResponse> inventoryTrend() {
 
-        return transactionRepository.inventoryTrend()
+        return getInventoryTrendForLastTwelveMonths()
 
                 .stream()
 
@@ -462,11 +471,11 @@ public class DashboardService {
 
                         new InventoryTrendResponse(
 
-                                String.format("%04d-%02d", row[0], row[1]),
+                                row.getMonth(),
 
-                                (BigDecimal) row[2],
+                                row.getStockIn(),
 
-                                (BigDecimal) row[3]
+                                row.getStockOut()
 
                         )
 
@@ -561,6 +570,37 @@ public class DashboardService {
         return total == null
                 ? BigDecimal.ZERO
                 : total;
+
+    }
+
+    private BigDecimal getMaterialInventoryValue() {
+
+        return getOrZero(
+                materialInventoryRepository.getTotalInventoryValue()
+        );
+
+    }
+
+    private BigDecimal getProductInventoryValue() {
+
+        return getOrZero(
+                productInventoryRepository.getTotalInventoryValue()
+        );
+
+    }
+
+    private BigDecimal getTotalInventoryValue() {
+
+        return getMaterialInventoryValue()
+                .add(getProductInventoryValue());
+
+    }
+
+    private BigDecimal getProductInventoryQuantity() {
+
+        return getOrZero(
+                productInventoryRepository.getTotalQuantity()
+        );
 
     }
 
