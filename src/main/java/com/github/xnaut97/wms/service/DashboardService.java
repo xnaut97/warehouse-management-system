@@ -9,8 +9,8 @@ import com.github.xnaut97.wms.repository.goods.GoodsReceiptItemRepository;
 import com.github.xnaut97.wms.repository.inventory.MaterialInventoryRepository;
 import com.github.xnaut97.wms.repository.inventory.ProductInventoryRepository;
 import com.github.xnaut97.wms.repository.inventory.InventoryTransactionRepository;
-import com.github.xnaut97.wms.repository.product.ProductIssueItemRepository;
-import com.github.xnaut97.wms.repository.product.ProductReceiptItemRepository;
+import com.github.xnaut97.wms.repository.product.ProductIssueRepository;
+import com.github.xnaut97.wms.repository.product.ProductReceiptRepository;
 import com.github.xnaut97.wms.repository.product.ProductRepository;
 import com.github.xnaut97.wms.repository.stocktaking.StocktakingItemRepository;
 import com.github.xnaut97.wms.repository.stocktaking.StocktakingRepository;
@@ -59,9 +59,9 @@ public class DashboardService {
 
     private final GoodsIssueItemRepository issueItemRepository;
 
-    private final ProductReceiptItemRepository productReceiptItemRepository;
+    private final ProductReceiptRepository productReceiptRepository;
 
-    private final ProductIssueItemRepository productIssueItemRepository;
+    private final ProductIssueRepository productIssueRepository;
 
     private final InventoryTransactionRepository transactionRepository;
 
@@ -155,21 +155,11 @@ public class DashboardService {
                         getTotalInventoryValue()
                 ),
 
-                getOrZero(
-                        receiptItemRepository.getTotalQuantity()
-                ).add(
-                        getOrZero(
-                                productReceiptItemRepository.getTotalQuantity()
-                        )
-                ),
+                receiptRepository.count()
+                        + productReceiptRepository.count(),
 
-                getOrZero(
-                        issueItemRepository.getTotalQuantity()
-                ).add(
-                        getOrZero(
-                                productIssueItemRepository.getTotalQuantity()
-                        )
-                ),
+                issueRepository.count()
+                        + productIssueRepository.count(),
 
                 getTotalInventoryQuantity()
 

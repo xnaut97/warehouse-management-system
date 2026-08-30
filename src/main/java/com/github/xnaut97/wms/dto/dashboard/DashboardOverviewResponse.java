@@ -15,9 +15,9 @@ public class DashboardOverviewResponse {
 
     private BigDecimal totalInventoryValue;
 
-    private BigDecimal totalGoodsReceived;
+    private long totalGoodsReceived;
 
-    private BigDecimal totalGoodsIssued;
+    private long totalGoodsIssued;
 
     private BigDecimal currentInventoryQuantity;
 
