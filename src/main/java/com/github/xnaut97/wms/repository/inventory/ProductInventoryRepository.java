@@ -78,4 +78,10 @@ public interface ProductInventoryRepository
             FROM ProductInventory i
             """)
     BigDecimal getTotalInventoryValue();
+
+    @Query("""
+            SELECT COALESCE(SUM(i.quantity),0)
+            FROM ProductInventory i
+            """)
+    BigDecimal getTotalQuantity();
 }
