@@ -57,7 +57,13 @@ public class SampleDataFactory {
         return user;
     }
 
-    public Warehouse warehouse(String code, String name, User manager) {
+    public Warehouse warehouse(
+            String code,
+            String name,
+            String address,
+            String description,
+            User manager
+    ) {
 
         Warehouse warehouse = new Warehouse();
 
@@ -67,9 +73,9 @@ public class SampleDataFactory {
 
         warehouse.setName(name);
 
-        warehouse.setAddress(null);
+        warehouse.setAddress(address);
 
-        warehouse.setDescription(null);
+        warehouse.setDescription(description);
 
         warehouse.setEnabled(true);
 
