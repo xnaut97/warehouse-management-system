@@ -161,7 +161,7 @@ public class DashboardService {
                 issueRepository.count()
                         + productIssueRepository.count(),
 
-                getTotalInventoryQuantity()
+                getProductInventoryQuantity()
 
         );
 
