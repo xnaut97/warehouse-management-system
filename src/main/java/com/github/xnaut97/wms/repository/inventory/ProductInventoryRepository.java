@@ -84,4 +84,21 @@ public interface ProductInventoryRepository
             FROM ProductInventory i
             """)
     BigDecimal getTotalQuantity();
+
+    @Query("""
+            SELECT i
+            FROM ProductInventory i
+            JOIN FETCH i.warehouse w
+            JOIN FETCH i.product p
+            WHERE (:warehouseId IS NULL OR w.id = :warehouseId)
+              AND (
+                    :keyword IS NULL
+                    OR LOWER(p.code) LIKE :keyword
+                    OR LOWER(p.name) LIKE :keyword
+              )
+            """)
+    List<ProductInventory> findAllForInventoryList(
+            @Param("warehouseId") Long warehouseId,
+            @Param("keyword") String keyword
+    );
 }
