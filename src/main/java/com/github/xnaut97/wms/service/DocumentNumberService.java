@@ -22,16 +22,21 @@ public class DocumentNumberService {
     @Transactional
     public String next(DocumentType type) {
 
-        LocalDate today = LocalDate.now();
+        return next(type, LocalDate.now());
+
+    }
+
+    @Transactional
+    public String next(DocumentType type, LocalDate date) {
 
         DocumentSequence sequence =
-                repository.findByDocumentTypeAndSequenceDate(type, today)
+                repository.findByDocumentTypeAndSequenceDate(type, date)
                         .orElseGet(() -> {
 
                             DocumentSequence s = new DocumentSequence();
 
                             s.setDocumentType(type);
-                            s.setSequenceDate(today);
+                            s.setSequenceDate(date);
                             s.setCurrentValue(0);
 
                             return s;
@@ -44,7 +49,7 @@ public class DocumentNumberService {
 
         return "%s%s-%04d".formatted(
                 type.getPrefix(),
-                today.format(FORMATTER),
+                date.format(FORMATTER),
                 sequence.getCurrentValue()
         );
 
