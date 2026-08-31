@@ -6,6 +6,7 @@ import com.github.xnaut97.wms.dto.warehouse.WarehouseRequest;
 import com.github.xnaut97.wms.dto.warehouse.WarehouseResponse;
 import com.github.xnaut97.wms.enums.AuditAction;
 import com.github.xnaut97.wms.enums.RoleType;
+import com.github.xnaut97.wms.enums.StockGroup;
 import com.github.xnaut97.wms.entity.user.User;
 import com.github.xnaut97.wms.entity.common.Warehouse;
 import com.github.xnaut97.wms.exception.BusinessException;
@@ -216,6 +217,35 @@ public class WarehouseService {
         return repository.findById(id)
                 .orElseThrow(() ->
                         new BusinessException("Không tìm thấy kho"));
+
+    }
+
+    public Warehouse findWarehouseByIdForGroup(
+            Long id,
+            StockGroup group
+    ) {
+
+        Warehouse warehouse = findWarehouseById(id);
+
+        if (resolveGroup(warehouse) != group) {
+
+            throw new BusinessException(
+                    group == StockGroup.MATERIAL
+                            ? "Phiếu nguyên vật liệu chỉ được thực hiện tại Kho nguyên vật liệu."
+                            : "Phiếu sản phẩm chỉ được thực hiện tại Kho sản phẩm."
+            );
+
+        }
+
+        return warehouse;
+
+    }
+
+    public static StockGroup resolveGroup(Warehouse warehouse) {
+
+        return PRODUCT_WAREHOUSE_CODE.equals(warehouse.getCode())
+                ? StockGroup.PRODUCT
+                : StockGroup.MATERIAL;
 
     }
 

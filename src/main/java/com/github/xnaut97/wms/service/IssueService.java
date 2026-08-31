@@ -14,6 +14,7 @@ import com.github.xnaut97.wms.enums.AuditAction;
 import com.github.xnaut97.wms.enums.DocumentType;
 import com.github.xnaut97.wms.enums.InventoryTransactionType;
 import com.github.xnaut97.wms.enums.IssueStatus;
+import com.github.xnaut97.wms.enums.StockGroup;
 import com.github.xnaut97.wms.exception.BusinessException;
 import com.github.xnaut97.wms.repository.goods.GoodsIssueItemRepository;
 import com.github.xnaut97.wms.repository.goods.GoodsIssueRepository;
@@ -78,8 +79,9 @@ public class IssueService {
     public IssueResponse create(IssueRequest request) {
 
         Warehouse warehouse =
-                warehouseService.findWarehouseById(
-                        request.getWarehouseId());
+                warehouseService.findWarehouseByIdForGroup(
+                        request.getWarehouseId(),
+                        StockGroup.MATERIAL);
 
         Customer customer = request.getCustomerId() != null
                 ? customerService.findCustomerById(request.getCustomerId())
@@ -315,8 +317,9 @@ public class IssueService {
         validateDraft(issue);
 
         Warehouse warehouse =
-                warehouseService.findWarehouseById(
-                        request.getWarehouseId());
+                warehouseService.findWarehouseByIdForGroup(
+                        request.getWarehouseId(),
+                        StockGroup.MATERIAL);
 
         Customer customer = request.getCustomerId() != null
                 ? customerService.findCustomerById(request.getCustomerId())
