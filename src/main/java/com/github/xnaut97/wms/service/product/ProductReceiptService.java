@@ -12,6 +12,7 @@ import com.github.xnaut97.wms.entity.user.User;
 import com.github.xnaut97.wms.enums.AuditAction;
 import com.github.xnaut97.wms.enums.DocumentType;
 import com.github.xnaut97.wms.enums.ReceiptStatus;
+import com.github.xnaut97.wms.enums.StockGroup;
 import com.github.xnaut97.wms.exception.BusinessException;
 import com.github.xnaut97.wms.repository.inventory.ProductInventoryRepository;
 import com.github.xnaut97.wms.repository.product.ProductReceiptItemRepository;
@@ -92,8 +93,9 @@ public class ProductReceiptService {
     ) {
 
         Warehouse warehouse =
-                warehouseService.findWarehouseById(
-                        request.getWarehouseId()
+                warehouseService.findWarehouseByIdForGroup(
+                        request.getWarehouseId(),
+                        StockGroup.PRODUCT
                 );
 
         Supplier supplier =
@@ -268,8 +270,9 @@ public class ProductReceiptService {
         validateDraft(receipt);
 
         Warehouse warehouse =
-                warehouseService.findWarehouseById(
-                        request.getWarehouseId()
+                warehouseService.findWarehouseByIdForGroup(
+                        request.getWarehouseId(),
+                        StockGroup.PRODUCT
                 );
 
         Supplier supplier =

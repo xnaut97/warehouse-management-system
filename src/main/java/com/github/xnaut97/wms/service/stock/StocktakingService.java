@@ -1073,10 +1073,7 @@ public class StocktakingService {
 
     private StockGroup resolveGroup(Warehouse warehouse) {
 
-        return WarehouseService.PRODUCT_WAREHOUSE_CODE
-                .equals(warehouse.getCode())
-                ? StockGroup.PRODUCT
-                : StockGroup.MATERIAL;
+        return WarehouseService.resolveGroup(warehouse);
 
     }
 

@@ -12,6 +12,7 @@ import com.github.xnaut97.wms.entity.user.User;
 import com.github.xnaut97.wms.enums.AuditAction;
 import com.github.xnaut97.wms.enums.DocumentType;
 import com.github.xnaut97.wms.enums.IssueStatus;
+import com.github.xnaut97.wms.enums.StockGroup;
 import com.github.xnaut97.wms.exception.BusinessException;
 import com.github.xnaut97.wms.repository.inventory.ProductInventoryRepository;
 import com.github.xnaut97.wms.repository.product.ProductIssueItemRepository;
@@ -102,8 +103,9 @@ public class ProductIssueService {
     ) {
 
         Warehouse warehouse =
-                warehouseService.findWarehouseById(
-                        request.getWarehouseId()
+                warehouseService.findWarehouseByIdForGroup(
+                        request.getWarehouseId(),
+                        StockGroup.PRODUCT
                 );
 
         Customer customer =
@@ -299,8 +301,9 @@ public class ProductIssueService {
         validateDraft(issue);
 
         Warehouse warehouse =
-                warehouseService.findWarehouseById(
-                        request.getWarehouseId()
+                warehouseService.findWarehouseByIdForGroup(
+                        request.getWarehouseId(),
+                        StockGroup.PRODUCT
                 );
 
         Customer customer =
