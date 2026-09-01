@@ -20,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AlertService {
 
-    private static final int NEAR_EXPIRY_CRITICAL_DAYS = 60;
+    public static final int NEAR_EXPIRY_CRITICAL_DAYS = 60;
 
     private static final int NEAR_EXPIRY_WARNING_DAYS = 90;
 
