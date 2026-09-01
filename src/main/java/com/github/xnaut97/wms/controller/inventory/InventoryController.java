@@ -3,14 +3,18 @@ package com.github.xnaut97.wms.controller.inventory;
 import com.github.xnaut97.wms.dto.common.ApiResponse;
 import com.github.xnaut97.wms.dto.inventory.InventoryDetailResponse;
 import com.github.xnaut97.wms.dto.inventory.InventoryResponse;
+import com.github.xnaut97.wms.dto.inventory.InventorySummaryResponse;
 import com.github.xnaut97.wms.dto.inventory.LowStockResponse;
+import com.github.xnaut97.wms.enums.StockGroup;
 import com.github.xnaut97.wms.service.inventory.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -35,6 +39,41 @@ public class InventoryController {
         return ApiResponse.success(
                 "Low stock retrieved successfully",
                 service.getLowStock()
+        );
+
+    }
+
+    @GetMapping("/summary")
+    @PreAuthorize("hasAnyRole('ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_STAFF','EXECUTIVE_BOARD','ACCOUNTANT')")
+    public ApiResponse<InventorySummaryResponse> getSummary(
+
+            @RequestParam(required = false)
+            StockGroup stockGroup,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate fromDate,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate toDate
+
+    ) {
+
+        return ApiResponse.success(
+
+                "Inventory summary retrieved successfully",
+
+                service.getSummary(
+
+                        stockGroup,
+
+                        fromDate,
+
+                        toDate
+
+                )
+
         );
 
     }

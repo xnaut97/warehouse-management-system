@@ -116,6 +116,23 @@ public class OperationReportService {
             LocalDate toDate
     ) {
 
+        return getStockSummary(
+                stockGroup,
+                fromDate,
+                toDate,
+                true
+        );
+
+    }
+
+    @Transactional(readOnly = true)
+    public StockSummaryReportResponse getStockSummary(
+            StockGroup stockGroup,
+            LocalDate fromDate,
+            LocalDate toDate,
+            boolean includeDocuments
+    ) {
+
         StockGroup resolvedGroup =
                 stockGroup != null
                         ? stockGroup
@@ -203,12 +220,14 @@ public class OperationReportService {
                 );
 
         Map<Long, List<OperationDocumentResponse>> documents =
-                groupDocuments(
-                        material,
-                        warehouseId,
-                        resolvedFromDate,
-                        resolvedToDate
-                );
+                includeDocuments
+                        ? groupDocuments(
+                                material,
+                                warehouseId,
+                                resolvedFromDate,
+                                resolvedToDate
+                        )
+                        : Map.of();
 
         Map<Long, OperationQuantityResponse> identity = new LinkedHashMap<>();
 

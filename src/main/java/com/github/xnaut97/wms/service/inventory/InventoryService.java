@@ -1,15 +1,28 @@
 package com.github.xnaut97.wms.service.inventory;
 
 import com.github.xnaut97.wms.dto.inventory.InventoryDetailResponse;
+import com.github.xnaut97.wms.dto.inventory.InventoryLotResponse;
 import com.github.xnaut97.wms.dto.inventory.InventoryResponse;
+import com.github.xnaut97.wms.dto.inventory.InventorySummaryResponse;
+import com.github.xnaut97.wms.dto.inventory.InventorySummaryRowResponse;
 import com.github.xnaut97.wms.dto.inventory.LowStockResponse;
+import com.github.xnaut97.wms.dto.report.operation.StockSummaryReportResponse;
+import com.github.xnaut97.wms.dto.report.operation.StockSummaryRowResponse;
 import com.github.xnaut97.wms.entity.inventory.MaterialInventory;
 import com.github.xnaut97.wms.entity.inventory.ProductInventory;
+import com.github.xnaut97.wms.entity.material.Material;
+import com.github.xnaut97.wms.entity.product.Product;
+import com.github.xnaut97.wms.enums.ExpiryStatus;
+import com.github.xnaut97.wms.enums.InventoryStatus;
 import com.github.xnaut97.wms.enums.StockGroup;
 import com.github.xnaut97.wms.enums.StockStatus;
 import com.github.xnaut97.wms.exception.BusinessException;
+import com.github.xnaut97.wms.repository.MaterialRepository;
 import com.github.xnaut97.wms.repository.inventory.MaterialInventoryRepository;
 import com.github.xnaut97.wms.repository.inventory.ProductInventoryRepository;
+import com.github.xnaut97.wms.repository.product.ProductRepository;
+import com.github.xnaut97.wms.service.alert.AlertService;
+import com.github.xnaut97.wms.service.report.OperationReportService;
 import com.github.xnaut97.wms.specification.InventorySpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,11 +33,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,9 +51,17 @@ public class InventoryService {
     private static final Comparator<String> TEXT =
             Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER);
 
+    private static final int VALUE_SCALE = 2;
+
     private final MaterialInventoryRepository repository;
 
     private final ProductInventoryRepository productRepository;
+
+    private final MaterialRepository materialRepository;
+
+    private final ProductRepository productCatalogRepository;
+
+    private final OperationReportService operationReportService;
 
     @Transactional
     public List<LowStockResponse> getLowStock() {
@@ -100,6 +126,55 @@ public class InventoryService {
 
     }
 
+    /**
+     * Bảng tồn kho theo kỳ của kho nguyên vật liệu hoặc kho sản phẩm. Số liệu
+     * tồn đầu, nhập, xuất, tồn cuối lấy nguyên từ báo cáo nhập xuất tồn hiện có
+     * để hai màn hình luôn khớp nhau; phần bổ sung ở đây là giá bình quân, giá
+     * trị vốn tồn, trạng thái định mức và danh sách lô của sản phẩm.
+     */
+    @Transactional(readOnly = true)
+    public InventorySummaryResponse getSummary(
+            StockGroup stockGroup,
+            LocalDate fromDate,
+            LocalDate toDate
+    ) {
+
+        StockSummaryReportResponse summary =
+                operationReportService.getStockSummary(
+                        stockGroup,
+                        fromDate,
+                        toDate,
+                        false
+                );
+
+        List<InventorySummaryRowResponse> items =
+                summary.getStockGroup() == StockGroup.PRODUCT
+                        ? productRows(summary)
+                        : materialRows(summary);
+
+        return InventorySummaryResponse.builder()
+                .fromDate(summary.getFromDate())
+                .toDate(summary.getToDate())
+                .stockGroup(summary.getStockGroup())
+                .warehouseId(summary.getWarehouseId())
+                .warehouseCode(summary.getWarehouseCode())
+                .warehouseName(summary.getWarehouseName())
+                .totalOpeningQuantity(summary.getTotalOpeningQuantity())
+                .totalReceiptQuantity(summary.getTotalReceiptQuantity())
+                .totalIssueQuantity(summary.getTotalIssueQuantity())
+                .totalClosingQuantity(summary.getTotalClosingQuantity())
+                .totalInventoryValue(
+                        scaled(
+                                items.stream()
+                                        .map(InventorySummaryRowResponse::getInventoryValue)
+                                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+                        )
+                )
+                .items(items)
+                .build();
+
+    }
+
     @Transactional
     public InventoryDetailResponse getDetail(
             Long id
@@ -120,6 +195,251 @@ public class InventoryService {
                         new BusinessException(
                                 "Không tìm thấy tồn kho."
                         ));
+
+    }
+
+    private List<InventorySummaryRowResponse> materialRows(
+            StockSummaryReportResponse summary
+    ) {
+
+        Map<Long, Material> materials = materialRepository
+                .findAllById(itemIds(summary))
+                .stream()
+                .collect(Collectors.toMap(
+                        Material::getId,
+                        Function.identity()
+                ));
+
+        List<InventorySummaryRowResponse> rows = new ArrayList<>();
+
+        for (StockSummaryRowResponse row : summary.getItems()) {
+
+            Material material = materials.get(row.getItemId());
+
+            BigDecimal averagePrice = material == null
+                    ? BigDecimal.ZERO
+                    : orZero(material.getUnitPrice());
+
+            BigDecimal minimumStock = material == null
+                    ? BigDecimal.ZERO
+                    : orZero(material.getMinimumStock());
+
+            BigDecimal maximumStock = material == null
+                    ? BigDecimal.ZERO
+                    : orZero(material.getMaximumStock());
+
+            rows.add(baseRow(row)
+                    .averagePrice(scaled(averagePrice))
+                    .inventoryValue(
+                            scaled(orZero(row.getClosingQuantity())
+                                    .multiply(averagePrice))
+                    )
+                    .minimumStock(minimumStock)
+                    .maximumStock(maximumStock)
+                    .thresholdStatus(
+                            thresholdStatus(
+                                    orZero(row.getClosingQuantity()),
+                                    minimumStock,
+                                    maximumStock
+                            )
+                    )
+                    .build());
+
+        }
+
+        return rows;
+
+    }
+
+    private List<InventorySummaryRowResponse> productRows(
+            StockSummaryReportResponse summary
+    ) {
+
+        Map<Long, Product> products = productCatalogRepository
+                .findAllById(itemIds(summary))
+                .stream()
+                .collect(Collectors.toMap(
+                        Product::getId,
+                        Function.identity()
+                ));
+
+        LocalDate today = LocalDate.now();
+
+        Map<Long, List<InventoryLotResponse>> lots =
+                lotsByProduct(summary.getWarehouseId(), today);
+
+        List<InventorySummaryRowResponse> rows = new ArrayList<>();
+
+        for (StockSummaryRowResponse row : summary.getItems()) {
+
+            Product product = products.get(row.getItemId());
+
+            BigDecimal averagePrice = product == null
+                    ? BigDecimal.ZERO
+                    : orZero(product.getAveragePrice());
+
+            List<InventoryLotResponse> productLots =
+                    lots.getOrDefault(row.getItemId(), List.of());
+
+            rows.add(baseRow(row)
+                    .averagePrice(scaled(averagePrice))
+                    .inventoryValue(
+                            scaled(orZero(row.getClosingQuantity())
+                                    .multiply(averagePrice))
+                    )
+                    .minimumStock(
+                            product == null
+                                    ? BigDecimal.ZERO
+                                    : orZero(product.getMinimumStock())
+                    )
+                    .maximumStock(
+                            product == null
+                                    ? BigDecimal.ZERO
+                                    : orZero(product.getMaximumStock())
+                    )
+                    .expiryStatus(primaryLotStatus(productLots))
+                    .lots(productLots)
+                    .build());
+
+        }
+
+        return rows;
+
+    }
+
+    /**
+     * Lô còn tồn của kho sản phẩm, giữ nguyên thứ tự FEFO (hạn dùng tăng dần)
+     * do repository trả về.
+     */
+    private Map<Long, List<InventoryLotResponse>> lotsByProduct(
+            Long warehouseId,
+            LocalDate today
+    ) {
+
+        Map<Long, List<InventoryLotResponse>> result =
+                new LinkedHashMap<>();
+
+        for (ProductInventory lot
+                : productRepository.findAvailableLots(warehouseId)) {
+
+            result.computeIfAbsent(
+                    lot.getProduct().getId(),
+                    key -> new ArrayList<>()
+            ).add(mapLot(lot, today));
+
+        }
+
+        return result;
+
+    }
+
+    private InventoryLotResponse mapLot(
+            ProductInventory lot,
+            LocalDate today
+    ) {
+
+        Long daysToExpiry = lot.getExpirationDate() == null
+                ? null
+                : ChronoUnit.DAYS.between(
+                        today,
+                        lot.getExpirationDate()
+                );
+
+        return InventoryLotResponse.builder()
+                .inventoryId(lot.getId())
+                .lotNumber(lot.getLotNumber())
+                .expirationDate(lot.getExpirationDate())
+                .daysToExpiry(daysToExpiry)
+                .quantity(lot.getQuantity())
+                .status(expiryStatus(daysToExpiry))
+                .build();
+
+    }
+
+    /**
+     * Ngưỡng cảnh báo hạn dùng dùng chung với trung tâm cảnh báo.
+     */
+    private ExpiryStatus expiryStatus(Long daysToExpiry) {
+
+        return daysToExpiry != null
+                && daysToExpiry <= AlertService.NEAR_EXPIRY_CRITICAL_DAYS
+                ? ExpiryStatus.FEFO
+                : ExpiryStatus.SAFE;
+
+    }
+
+    /**
+     * Lô hết hạn sớm nhất quyết định trạng thái của sản phẩm, nên dòng cha và
+     * bảng lô không bao giờ mâu thuẫn nhau.
+     */
+    private ExpiryStatus primaryLotStatus(
+            List<InventoryLotResponse> lots
+    ) {
+
+        return lots.stream()
+                .map(InventoryLotResponse::getStatus)
+                .filter(status -> status == ExpiryStatus.FEFO)
+                .findFirst()
+                .orElse(ExpiryStatus.SAFE);
+
+    }
+
+    private InventoryStatus thresholdStatus(
+            BigDecimal quantity,
+            BigDecimal minimumStock,
+            BigDecimal maximumStock
+    ) {
+
+        if (quantity.compareTo(minimumStock) < 0) {
+            return InventoryStatus.BELOW_MIN;
+        }
+
+        if (maximumStock.compareTo(BigDecimal.ZERO) > 0
+                && quantity.compareTo(maximumStock) > 0) {
+            return InventoryStatus.ABOVE_MAX;
+        }
+
+        return InventoryStatus.NORMAL;
+
+    }
+
+    private InventorySummaryRowResponse.InventorySummaryRowResponseBuilder baseRow(
+            StockSummaryRowResponse row
+    ) {
+
+        return InventorySummaryRowResponse.builder()
+                .itemId(row.getItemId())
+                .code(row.getCode())
+                .name(row.getName())
+                .unit(row.getUnit())
+                .openingQuantity(row.getOpeningQuantity())
+                .receiptQuantity(row.getReceiptQuantity())
+                .issueQuantity(row.getIssueQuantity())
+                .closingQuantity(row.getClosingQuantity());
+
+    }
+
+    private List<Long> itemIds(
+            StockSummaryReportResponse summary
+    ) {
+
+        return summary.getItems().stream()
+                .map(StockSummaryRowResponse::getItemId)
+                .toList();
+
+    }
+
+    private BigDecimal scaled(BigDecimal value) {
+
+        return orZero(value).setScale(VALUE_SCALE, RoundingMode.HALF_UP);
+
+    }
+
+    private BigDecimal orZero(BigDecimal value) {
+
+        return value == null
+                ? BigDecimal.ZERO
+                : value;
 
     }
 
