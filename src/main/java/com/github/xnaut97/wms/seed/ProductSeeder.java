@@ -28,12 +28,16 @@ public class ProductSeeder {
 
     public static final String UNIT = "Bao";
 
+    public static final String C1_CATEGORY = "Keo C1";
+
+    public static final String C2_CATEGORY = "Keo 2";
+
     public static final List<Recipe> RECIPES = List.of(
             new Recipe(
                     "TP-C1-25",
                     "Keo dán gạch C1",
                     "Bao 25kg, keo dán gạch gốc xi măng, thi công nội thất",
-                    "Keo C1",
+                    C1_CATEGORY,
                     BigDecimal.valueOf(62000),
                     BigDecimal.valueOf(95000),
                     5,
@@ -44,7 +48,7 @@ public class ProductSeeder {
                     "TP-C1-20",
                     "Keo dán gạch C1 chống trượt",
                     "Bao 20kg, keo dán gạch gốc xi măng, chống trượt cho tường đứng",
-                    "Keo C1",
+                    C1_CATEGORY,
                     BigDecimal.valueOf(53000),
                     BigDecimal.valueOf(82000),
                     3,
@@ -55,7 +59,7 @@ public class ProductSeeder {
                     "TP-C2-25",
                     "Keo dán gạch C2",
                     "Bao 25kg, keo dán gạch gốc xi măng cường độ cao, dùng cho gạch khổ lớn",
-                    "Keo 2",
+                    C2_CATEGORY,
                     BigDecimal.valueOf(88000),
                     BigDecimal.valueOf(135000),
                     2,
