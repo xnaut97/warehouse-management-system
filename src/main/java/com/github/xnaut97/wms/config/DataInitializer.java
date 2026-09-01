@@ -1,9 +1,10 @@
 package com.github.xnaut97.wms.config;
 
+import com.github.xnaut97.wms.seed.BOMSeeder;
 import com.github.xnaut97.wms.seed.CustomerSeeder;
-import com.github.xnaut97.wms.seed.InventoryOperationSeeder;
 import com.github.xnaut97.wms.seed.MaterialSeeder;
 import com.github.xnaut97.wms.seed.ProductSeeder;
+import com.github.xnaut97.wms.seed.ProductionOperationSeeder;
 import com.github.xnaut97.wms.seed.RoleSeeder;
 import com.github.xnaut97.wms.seed.SupplierSeeder;
 import com.github.xnaut97.wms.seed.UserSeeder;
@@ -26,7 +27,8 @@ public class DataInitializer implements CommandLineRunner {
     private final CustomerSeeder customerSeeder;
     private final MaterialSeeder materialSeeder;
     private final ProductSeeder productSeeder;
-    private final InventoryOperationSeeder inventoryOperationSeeder;
+    private final BOMSeeder bomSeeder;
+    private final ProductionOperationSeeder productionOperationSeeder;
 
     @Override
     public void run(String @NonNull ... args) {
@@ -38,7 +40,8 @@ public class DataInitializer implements CommandLineRunner {
         customerSeeder.seed();
         materialSeeder.seed();
         productSeeder.seed();
-        inventoryOperationSeeder.seed();
+        bomSeeder.seed();
+        productionOperationSeeder.seed();
     }
 
 }
