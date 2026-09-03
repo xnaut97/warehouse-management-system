@@ -41,8 +41,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -202,17 +200,29 @@ public class InventoryService {
             StockSummaryReportResponse summary
     ) {
 
-        Map<Long, Material> materials = materialRepository
-                .findAllById(itemIds(summary))
-                .stream()
-                .collect(Collectors.toMap(
-                        Material::getId,
-                        Function.identity()
-                ));
+        Map<Long, Material> materials = new LinkedHashMap<>();
+
+        materialRepository.findAllByEnabledTrue()
+                .forEach(material -> materials.put(material.getId(), material));
+
+        materialRepository.findAllById(itemIds(summary))
+                .forEach(material -> materials.put(material.getId(), material));
+
+        List<StockSummaryRowResponse> sourceRows = withCatalogItems(
+                summary,
+                materials.values().stream()
+                        .map(material -> emptyRow(
+                                material.getId(),
+                                material.getCode(),
+                                material.getName(),
+                                material.getUnit()
+                        ))
+                        .toList()
+        );
 
         List<InventorySummaryRowResponse> rows = new ArrayList<>();
 
-        for (StockSummaryRowResponse row : summary.getItems()) {
+        for (StockSummaryRowResponse row : sourceRows) {
 
             Material material = materials.get(row.getItemId());
 
@@ -255,22 +265,34 @@ public class InventoryService {
             StockSummaryReportResponse summary
     ) {
 
-        Map<Long, Product> products = productCatalogRepository
-                .findAllById(itemIds(summary))
-                .stream()
-                .collect(Collectors.toMap(
-                        Product::getId,
-                        Function.identity()
-                ));
+        Map<Long, Product> products = new LinkedHashMap<>();
+
+        productCatalogRepository.findAllByEnabledTrue()
+                .forEach(product -> products.put(product.getId(), product));
+
+        productCatalogRepository.findAllById(itemIds(summary))
+                .forEach(product -> products.put(product.getId(), product));
 
         LocalDate today = LocalDate.now();
 
         Map<Long, List<InventoryLotResponse>> lots =
                 lotsByProduct(summary.getWarehouseId(), today);
 
+        List<StockSummaryRowResponse> sourceRows = withCatalogItems(
+                summary,
+                products.values().stream()
+                        .map(product -> emptyRow(
+                                product.getId(),
+                                product.getCode(),
+                                product.getName(),
+                                product.getUnit()
+                        ))
+                        .toList()
+        );
+
         List<InventorySummaryRowResponse> rows = new ArrayList<>();
 
-        for (StockSummaryRowResponse row : summary.getItems()) {
+        for (StockSummaryRowResponse row : sourceRows) {
 
             Product product = products.get(row.getItemId());
 
@@ -416,6 +438,51 @@ public class InventoryService {
                 .receiptQuantity(row.getReceiptQuantity())
                 .issueQuantity(row.getIssueQuantity())
                 .closingQuantity(row.getClosingQuantity());
+
+    }
+
+    private List<StockSummaryRowResponse> withCatalogItems(
+            StockSummaryReportResponse summary,
+            List<StockSummaryRowResponse> catalogRows
+    ) {
+
+        Map<Long, StockSummaryRowResponse> merged = new LinkedHashMap<>();
+
+        catalogRows.forEach(row -> merged.put(row.getItemId(), row));
+
+        summary.getItems().forEach(row -> merged.put(row.getItemId(), row));
+
+        List<StockSummaryRowResponse> rows = new ArrayList<>(merged.values());
+
+        rows.sort(Comparator.comparing(
+                StockSummaryRowResponse::getCode,
+                Comparator.nullsLast(Comparator.naturalOrder())
+        ));
+
+        return rows;
+
+    }
+
+    private StockSummaryRowResponse emptyRow(
+            Long itemId,
+            String code,
+            String name,
+            String unit
+    ) {
+
+        BigDecimal zero = scaled(BigDecimal.ZERO);
+
+        return StockSummaryRowResponse.builder()
+                .itemId(itemId)
+                .code(code)
+                .name(name)
+                .unit(unit)
+                .openingQuantity(zero)
+                .receiptQuantity(zero)
+                .issueQuantity(zero)
+                .closingQuantity(zero)
+                .documents(List.of())
+                .build();
 
     }
 
