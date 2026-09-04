@@ -2,7 +2,6 @@ package com.github.xnaut97.wms.seed;
 
 import com.github.xnaut97.wms.dto.bom.BOMItemRequest;
 import com.github.xnaut97.wms.dto.bom.BOMRequest;
-import com.github.xnaut97.wms.entity.bom.BOM;
 import com.github.xnaut97.wms.entity.product.Product;
 import com.github.xnaut97.wms.repository.MaterialRepository;
 import com.github.xnaut97.wms.repository.bom.BOMRepository;
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -25,11 +23,13 @@ public class BOMSeeder {
     public record Line(
             String materialCode,
             BigDecimal consumptionQuantity,
+            BigDecimal mixingRatio,
             BigDecimal maxWasteRatio
     ) {
     }
 
     public record Formula(
+            String code,
             String productCode,
             List<Line> mix
     ) {
@@ -37,35 +37,51 @@ public class BOMSeeder {
 
     private static final BigDecimal PACKAGING_QUANTITY = BigDecimal.ONE;
 
-    private static final BigDecimal PACKAGING_WASTE_RATIO =
-            BigDecimal.valueOf(0.50);
+    private static final BigDecimal PACKAGING_RATIO =
+            BigDecimal.valueOf(100);
 
-    private static final List<Formula> FORMULAS = List.of(
+    private static final BigDecimal PACKAGING_WASTE_RATIO =
+            new BigDecimal("2.0");
+
+    public static final List<Formula> FORMULAS = List.of(
             new Formula(
-                    "TP-C1-25",
-                    List.of(
-                            mix(MaterialSeeder.SAND, "15", "2.00"),
-                            mix(MaterialSeeder.CEMENT, "10", "2.00"),
-                            mix(MaterialSeeder.RDP, "0.25", "1.00"),
-                            mix(MaterialSeeder.HPMC, "0.10", "1.00")
-                    )
+                    "BOM-C1-25X",
+                    "MAT-C1-25X",
+                    standard25()
             ),
             new Formula(
-                    "TP-C1-20",
-                    List.of(
-                            mix(MaterialSeeder.SAND, "12", "2.00"),
-                            mix(MaterialSeeder.CEMENT, "8", "2.00"),
-                            mix(MaterialSeeder.RDP, "0.20", "1.00"),
-                            mix(MaterialSeeder.HPMC, "0.08", "1.00")
-                    )
+                    "BOM-C1-25V",
+                    "MAT-C1-25V",
+                    standard25()
             ),
             new Formula(
-                    "TP-C2-25",
+                    "BOM-PUT-25D",
+                    "PUT-C1-25D",
+                    standard25()
+            ),
+            new Formula(
+                    "BOM-PUT-25C",
+                    "PUT-C1-25C",
+                    standard25()
+            ),
+            new Formula(
+                    "BOM-C1-20D",
+                    "MAT-C1-20D",
+                    standard20()
+            ),
+            new Formula(
+                    "BOM-C1-20X",
+                    "MAT-C1-20X",
+                    standard20()
+            ),
+            new Formula(
+                    "BOM-C2-20",
+                    "MAT-C2-20",
                     List.of(
-                            mix(MaterialSeeder.SAND, "13", "2.00"),
-                            mix(MaterialSeeder.CEMENT, "12", "2.00"),
-                            mix(MaterialSeeder.RDP, "0.50", "1.00"),
-                            mix(MaterialSeeder.HPMC, "0.15", "1.00")
+                            mix(MaterialSeeder.SAND, "12", "60.0", "1.5"),
+                            mix(MaterialSeeder.CEMENT, "8", "40.0", "1.0"),
+                            mix(MaterialSeeder.RDP, "0.30", "1.5", "0.5"),
+                            mix(MaterialSeeder.HPMC, "0.10", "0.5", "0.5")
                     )
             )
     );
@@ -77,6 +93,16 @@ public class BOMSeeder {
     private final ProductRepository productRepository;
 
     private final MaterialRepository materialRepository;
+
+    public static List<Line> allLines(Formula formula) {
+
+        List<Line> lines = new ArrayList<>(formula.mix());
+
+        lines.add(packagingLine(formula.productCode()));
+
+        return lines;
+
+    }
 
     @Transactional
     public void seed() {
@@ -90,11 +116,13 @@ public class BOMSeeder {
                 continue;
             }
 
-            if (!materialsAvailable(formula)) {
+            List<Line> lines = allLines(formula);
+
+            if (!materialsAvailable(lines)) {
                 continue;
             }
 
-            service.create(request(product.get(), formula));
+            service.create(request(product.get(), formula, lines));
 
         }
 
@@ -110,15 +138,9 @@ public class BOMSeeder {
 
     }
 
-    private boolean materialsAvailable(Formula formula) {
+    private boolean materialsAvailable(List<Line> lines) {
 
-        if (!materialRepository.existsByCode(
-                MaterialSeeder.packagingCode(formula.productCode())
-        )) {
-            return false;
-        }
-
-        return formula.mix().stream()
+        return lines.stream()
                 .allMatch(line ->
                         materialRepository.existsByCode(line.materialCode()));
 
@@ -126,101 +148,86 @@ public class BOMSeeder {
 
     private BOMRequest request(
             Product product,
-            Formula formula
+            Formula formula,
+            List<Line> lines
     ) {
 
         BOMRequest request = new BOMRequest();
 
-        request.setCode("BOM-" + product.getCode());
+        request.setCode(formula.code());
 
         request.setProductId(product.getId());
 
-        request.setItems(items(formula));
+        request.setItems(lines.stream().map(this::item).toList());
 
         return request;
 
     }
 
-    private List<BOMItemRequest> items(Formula formula) {
-
-        BigDecimal total = formula.mix().stream()
-                .map(Line::consumptionQuantity)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        List<BOMItemRequest> items = new ArrayList<>();
-
-        BigDecimal allocated = BigDecimal.ZERO;
-
-        for (int index = 0; index < formula.mix().size(); index++) {
-
-            Line line = formula.mix().get(index);
-
-            BigDecimal ratio = index == formula.mix().size() - 1
-                    ? BigDecimal.valueOf(100).subtract(allocated)
-                    : line.consumptionQuantity()
-                    .multiply(BigDecimal.valueOf(100))
-                    .divide(total, 2, RoundingMode.HALF_UP);
-
-            allocated = allocated.add(ratio);
-
-            items.add(
-                    item(
-                            line.materialCode(),
-                            line.consumptionQuantity(),
-                            ratio,
-                            line.maxWasteRatio()
-                    )
-            );
-
-        }
-
-        items.add(
-                item(
-                        MaterialSeeder.packagingCode(formula.productCode()),
-                        PACKAGING_QUANTITY,
-                        BigDecimal.ZERO,
-                        PACKAGING_WASTE_RATIO
-                )
-        );
-
-        return items;
-
-    }
-
-    private BOMItemRequest item(
-            String materialCode,
-            BigDecimal consumptionQuantity,
-            BigDecimal mixingRatio,
-            BigDecimal maxWasteRatio
-    ) {
+    private BOMItemRequest item(Line line) {
 
         BOMItemRequest item = new BOMItemRequest();
 
         item.setMaterialId(
-                materialRepository.findByCode(materialCode)
+                materialRepository.findByCode(line.materialCode())
                         .orElseThrow()
                         .getId()
         );
 
-        item.setConsumptionQuantity(consumptionQuantity);
+        item.setConsumptionQuantity(line.consumptionQuantity());
 
-        item.setMixingRatio(mixingRatio);
+        item.setMixingRatio(line.mixingRatio());
 
-        item.setMaxWasteRatio(maxWasteRatio);
+        item.setMaxWasteRatio(line.maxWasteRatio());
 
         return item;
+
+    }
+
+    private static List<Line> standard25() {
+
+        return List.of(
+                mix(MaterialSeeder.SAND, "15", "60.0", "1.5"),
+                mix(MaterialSeeder.CEMENT, "10", "40.0", "1.0"),
+                mix(MaterialSeeder.RDP, "0.25", "1.0", "0.5"),
+                mix(MaterialSeeder.HPMC, "0.10", "0.4", "0.5")
+        );
+
+    }
+
+    private static List<Line> standard20() {
+
+        return List.of(
+                mix(MaterialSeeder.SAND, "12", "60.0", "1.5"),
+                mix(MaterialSeeder.CEMENT, "8", "40.0", "1.0"),
+                mix(MaterialSeeder.RDP, "0.25", "1.25", "0.5"),
+                mix(MaterialSeeder.HPMC, "0.10", "0.5", "0.5")
+        );
+
+    }
+
+    private static Line packagingLine(String productCode) {
+
+        return new Line(
+                MaterialSeeder.packagingCode(productCode),
+                PACKAGING_QUANTITY,
+                PACKAGING_RATIO,
+                PACKAGING_WASTE_RATIO
+        );
 
     }
 
     private static Line mix(
             String materialCode,
             String consumptionQuantity,
+            String mixingRatio,
             String maxWasteRatio
     ) {
 
         return new Line(
                 materialCode,
                 new BigDecimal(consumptionQuantity),
+                new BigDecimal(mixingRatio),
                 new BigDecimal(maxWasteRatio)
         );
 

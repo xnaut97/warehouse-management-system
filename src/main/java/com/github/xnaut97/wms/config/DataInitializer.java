@@ -40,8 +40,8 @@ public class DataInitializer implements CommandLineRunner {
         warehouseSeeder.seed();
         supplierSeeder.seed();
         customerSeeder.seed();
-        materialSeeder.seed();
         productSeeder.seed();
+        materialSeeder.seed();
         bomSeeder.seed();
         productionOperationSeeder.seed();
         seedValidationReporter.report();

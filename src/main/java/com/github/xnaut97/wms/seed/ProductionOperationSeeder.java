@@ -133,34 +133,53 @@ public class ProductionOperationSeeder {
 
     private static final int MAX_DAILY_OUTPUT = 900;
 
-    private static final double SALES_RATIO = 0.95;
+    private static final double SALES_RATIO = 0.97;
 
     private static final double[] SEASON_INDEX = {
-            0.785, 0.724, 0.815, 0.845, 0.876, 0.906,
-            0.967, 1.089, 1.180, 1.271, 1.332, 1.210
+            0.608, 0.498, 0.664, 0.719, 0.774, 0.829,
+            0.940, 1.161, 1.327, 1.493, 1.604, 1.383
     };
 
     private static final DateTimeFormatter LOT_DATE =
             DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    private static final int RUN_DOWN_DAYS = 60;
-
     private static final int NOMINAL_MONTH_DAYS = 26;
 
     private static final double BUILD_UP_SALES_RATIO = 0.40;
 
+    private static final int MIN_C1_LINES = 2;
+
+    private static final int MAX_C1_LINES = 3;
+
+    private static final int RUN_DOWN_HORIZON = 12;
+
+    private static final int RUN_DOWN_DAYS = 200;
+
+    private static final int PLAN_ATTEMPTS = 60;
+
+    private static final BigDecimal CLOSING_BUFFER_RATIO =
+            BigDecimal.valueOf(0.4);
+
+    private static final BigDecimal CLOSING_FLOOR_RATIO =
+            BigDecimal.valueOf(0.15);
+
+    private static final BigDecimal CLOSING_CEILING_RATIO =
+            BigDecimal.valueOf(0.7);
+
     private static final Set<String> RUN_DOWN_MATERIALS = Set.of(
+            MaterialSeeder.SAND,
+            MaterialSeeder.CEMENT,
             MaterialSeeder.HPMC,
-            MaterialSeeder.RDP,
-            MaterialSeeder.packagingCode("TP-C1-20")
+            "PKG-PUT-25C",
+            "PKG-MAT-C2-20"
     );
 
-    private static final int[] NEAR_EXPIRY_OFFSETS = {45, 70, 85};
+    private static final int[] NEAR_EXPIRY_OFFSETS = {65, 75, 88};
 
     private static final int[] NEAR_EXPIRY_FLOORS = {45, 80, 120};
 
-    private static final BigDecimal FINAL_BULK_SAND =
-            BigDecimal.valueOf(76800);
+    private static final BigDecimal FINAL_BULK_RDP =
+            BigDecimal.valueOf(10000);
 
     private static final List<String> MATERIAL_VARIANCE_REASONS = List.of(
             "Sai lệch khi cân lại thực tế",
@@ -226,9 +245,19 @@ public class ProductionOperationSeeder {
 
     private Map<String, BigDecimal> lotFloors;
 
+    private Map<String, Integer> lotSequences;
+
     private Map<LocalDate, Integer> salesPlan;
 
     private Map<LocalDate, List<StocktakePlan>> stocktakingPlan;
+
+    private Map<LocalDate, Map<Long, Integer>> productionPlans;
+
+    private Map<LocalDate, Requirement> requirements;
+
+    private Map<Long, Map<LocalDate, BigDecimal>> remainingNeed;
+
+    private Map<String, List<BigDecimal>> runDownQueue;
 
     private Set<LocalDate> highGradeDays;
 
@@ -242,7 +271,7 @@ public class ProductionOperationSeeder {
 
     private LocalDate end;
 
-    private LocalDate runDownFrom;
+    private LocalDate runDownStart;
 
     private int operatorCursor;
 
@@ -295,11 +324,11 @@ public class ProductionOperationSeeder {
              !date.isAfter(end);
              date = date.plusDays(1)) {
 
-            if (isWorkingDay(date)) {
+            Map<Long, Integer> plan = productionPlans.get(date);
 
-                Map<Long, Integer> plan = productionPlan(date);
+            if (plan != null) {
 
-                Requirement requirement = materialRequirement(plan);
+                Requirement requirement = requirements.get(date);
 
                 replenishMaterials(date, requirement.totals());
 
@@ -314,10 +343,10 @@ public class ProductionOperationSeeder {
                 seedSales(date);
             }
 
-            for (StocktakePlan plan
+            for (StocktakePlan stocktake
                     : stocktakingPlan.getOrDefault(date, List.of())) {
 
-                seedStocktaking(date, plan);
+                seedStocktaking(date, stocktake);
 
             }
 
@@ -335,7 +364,7 @@ public class ProductionOperationSeeder {
 
     private boolean prepare() {
 
-        random = new Random(RANDOM_SEED);
+
 
         operators = List.of(
                 userRepository.findByUsername("staff").orElseThrow(),
@@ -391,7 +420,7 @@ public class ProductionOperationSeeder {
                             product.getId(),
                             product.getCode(),
                             recipe,
-                            ProductSeeder.C2_CATEGORY.equals(recipe.category()),
+                            recipe.premium(),
                             bom
                     )
             );
@@ -410,11 +439,27 @@ public class ProductionOperationSeeder {
 
         salesStart = buildUpStart.plusDays(14);
 
-        runDownFrom = end.minusDays(RUN_DOWN_DAYS);
-
         lotFloors = new LinkedHashMap<>();
 
-        planHighGradeDays();
+        lotSequences = new LinkedHashMap<>();
+
+        runDownQueue = new LinkedHashMap<>();
+
+        runDownStart = end.minusDays(RUN_DOWN_DAYS);
+
+        for (int attempt = 0; attempt < PLAN_ATTEMPTS; attempt++) {
+
+            random = new Random(RANDOM_SEED + attempt);
+
+            planHighGradeDays();
+
+            planProduction();
+
+            if (closingFeasible()) {
+                break;
+            }
+
+        }
 
         planNearExpiryDays();
 
@@ -423,6 +468,90 @@ public class ProductionOperationSeeder {
         planStocktaking();
 
         return true;
+
+    }
+
+    private boolean closingFeasible() {
+
+        for (MaterialRef material : materialsById.values()) {
+
+            MaterialSeeder.Recipe recipe = material.recipe();
+
+            BigDecimal lot = recipe.receiptLotSize();
+
+            if (!RUN_DOWN_MATERIALS.contains(material.code())
+                    || lot.compareTo(recipe.minimumStock()) < 0) {
+                continue;
+            }
+
+            BigDecimal consumed = requirements.values().stream()
+                    .map(requirement -> requirement.totals()
+                            .getOrDefault(material.id(), BigDecimal.ZERO))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal target = consumed.add(closingBuffer(recipe));
+
+            BigDecimal residue = lot
+                    .multiply(BigDecimal.valueOf(ceilUnits(target, lot)))
+                    .subtract(consumed);
+
+            if (residue.compareTo(
+                    recipe.minimumStock().multiply(CLOSING_FLOOR_RATIO)) < 0
+                    || residue.compareTo(
+                    recipe.minimumStock().multiply(CLOSING_CEILING_RATIO)) > 0) {
+                return false;
+            }
+
+        }
+
+        return true;
+
+    }
+
+    private void planProduction() {
+
+        productionPlans = new LinkedHashMap<>();
+
+        requirements = new LinkedHashMap<>();
+
+        for (LocalDate date = buildUpStart;
+             !date.isAfter(end);
+             date = date.plusDays(1)) {
+
+            if (!isWorkingDay(date)) {
+                continue;
+            }
+
+            Map<Long, Integer> plan = productionPlan(date);
+
+            productionPlans.put(date, plan);
+
+            requirements.put(date, materialRequirement(plan));
+
+        }
+
+        remainingNeed = new LinkedHashMap<>();
+
+        List<LocalDate> descending = new ArrayList<>(requirements.keySet());
+
+        Collections.reverse(descending);
+
+        Map<Long, BigDecimal> running = new LinkedHashMap<>();
+
+        for (LocalDate date : descending) {
+
+            requirements.get(date).totals().forEach((materialId, quantity) ->
+                    running.merge(materialId, quantity, BigDecimal::add));
+
+            running.forEach((materialId, total) ->
+                    remainingNeed
+                            .computeIfAbsent(
+                                    materialId,
+                                    id -> new LinkedHashMap<>()
+                            )
+                            .put(date, total));
+
+        }
 
     }
 
@@ -757,10 +886,7 @@ public class ProductionOperationSeeder {
                 .filter(line -> !line.highGrade())
                 .toList();
 
-        List<ProductLine> selected = standard.size() > 1
-                && random.nextInt(100) < 70
-                ? standard
-                : List.of(weightedPick(standard));
+        List<ProductLine> selected = pickStandardLines(standard);
 
         int[] weights = selected.stream()
                 .mapToInt(line -> line.recipe().outputWeight())
@@ -783,6 +909,31 @@ public class ProductionOperationSeeder {
         }
 
         return plan;
+
+    }
+
+    private List<ProductLine> pickStandardLines(List<ProductLine> standard) {
+
+        int lines = Math.min(
+                MIN_C1_LINES + random.nextInt(MAX_C1_LINES - MIN_C1_LINES + 1),
+                standard.size()
+        );
+
+        List<ProductLine> pool = new ArrayList<>(standard);
+
+        List<ProductLine> selected = new ArrayList<>();
+
+        while (selected.size() < lines && !pool.isEmpty()) {
+
+            ProductLine line = weightedPick(pool);
+
+            pool.remove(line);
+
+            selected.add(line);
+
+        }
+
+        return selected;
 
     }
 
@@ -876,42 +1027,22 @@ public class ProductionOperationSeeder {
 
             MaterialRef material = materialsById.get(entry.getKey());
 
-            BigDecimal need = entry.getValue();
-
-            boolean runDown =
-                    RUN_DOWN_MATERIALS.contains(material.code())
-                            && !date.isBefore(runDownFrom);
-
-            BigDecimal target = runDown
-                    ? need
-                    : need.multiply(
-                    BigDecimal.valueOf(material.recipe().coverDays())
+            List<BigDecimal> draws = plannedDraws(
+                    material,
+                    date,
+                    entry.getValue(),
+                    stockOf(material)
             );
 
-            BigDecimal stock = stockOf(material);
-
-            BigDecimal threshold = need.add(target);
-
-            int round = 0;
-
-            while (stock.compareTo(threshold) < 0 && round < 8) {
-
-                BigDecimal quantity = drawQuantity(
-                        material,
-                        threshold.subtract(stock),
-                        need,
-                        runDown
-                );
+            for (int round = 0; round < draws.size(); round++) {
 
                 while (rounds.size() <= round) {
                     rounds.add(new ArrayList<>());
                 }
 
-                rounds.get(round).add(new ReceiptDraw(material, quantity));
-
-                stock = stock.add(quantity);
-
-                round++;
+                rounds.get(round).add(
+                        new ReceiptDraw(material, draws.get(round))
+                );
 
             }
 
@@ -943,11 +1074,211 @@ public class ProductionOperationSeeder {
 
     }
 
+    private List<BigDecimal> plannedDraws(
+            MaterialRef material,
+            LocalDate date,
+            BigDecimal need,
+            BigDecimal stock
+    ) {
+
+        if (runDownQueue.containsKey(material.code())) {
+
+            return releaseQueued(material, need, stock);
+
+        }
+
+        if (RUN_DOWN_MATERIALS.contains(material.code())
+                && !date.isBefore(runDownStart)) {
+
+            List<BigDecimal> closing = closeOutDraws(material, date, stock);
+
+            if (closing != null) {
+
+                runDownQueue.put(
+                        material.code(),
+                        new ArrayList<>(closing)
+                );
+
+                return releaseQueued(material, need, stock);
+
+            }
+
+        }
+
+        return coverDraws(material, need, stock);
+
+    }
+
+    private List<BigDecimal> releaseQueued(
+            MaterialRef material,
+            BigDecimal need,
+            BigDecimal stock
+    ) {
+
+        List<BigDecimal> queue = runDownQueue.get(material.code());
+
+        List<BigDecimal> draws = new ArrayList<>();
+
+        BigDecimal held = stock;
+
+        while (held.compareTo(need) < 0 && !queue.isEmpty()) {
+
+            BigDecimal quantity = queue.removeFirst();
+
+            draws.add(quantity);
+
+            held = held.add(quantity);
+
+        }
+
+        if (held.compareTo(need) < 0) {
+
+            draws.addAll(closingDraws(material, need.subtract(held)));
+
+        }
+
+        return draws;
+
+    }
+
+    private List<BigDecimal> closeOutDraws(
+            MaterialRef material,
+            LocalDate date,
+            BigDecimal stock
+    ) {
+
+        BigDecimal remaining = remainingNeed
+                .getOrDefault(material.id(), Map.of())
+                .get(date);
+
+        if (remaining == null) {
+            return null;
+        }
+
+        BigDecimal horizon = material.recipe().receiptMaximum()
+                .multiply(BigDecimal.valueOf(RUN_DOWN_HORIZON));
+
+        if (remaining.compareTo(horizon) > 0) {
+            return null;
+        }
+
+        BigDecimal deficit = remaining
+                .add(closingBuffer(material.recipe()))
+                .subtract(stock);
+
+        List<BigDecimal> draws = deficit.signum() > 0
+                ? closingDraws(material, deficit)
+                : List.of();
+
+        BigDecimal supplied = draws.stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal closingStock =
+                stock.add(supplied).subtract(remaining);
+
+        return closingStock.compareTo(material.recipe().minimumStock()) < 0
+                ? draws
+                : null;
+
+    }
+
+    private BigDecimal closingBuffer(MaterialSeeder.Recipe recipe) {
+
+        return recipe.receiptLotSize()
+                .compareTo(recipe.minimumStock()) >= 0
+                ? BigDecimal.ZERO
+                : recipe.minimumStock().multiply(CLOSING_BUFFER_RATIO);
+
+    }
+
+    private List<BigDecimal> closingDraws(
+            MaterialRef material,
+            BigDecimal deficit
+    ) {
+
+        MaterialSeeder.Recipe recipe = material.recipe();
+
+        BigDecimal lot = recipe.receiptLotSize();
+
+        int receipts = deficit
+                .divide(recipe.receiptMaximum(), 0, RoundingMode.CEILING)
+                .intValue();
+
+        BigDecimal count = BigDecimal.valueOf(receipts);
+
+        BigDecimal total = lot.multiply(
+                        BigDecimal.valueOf(
+                                ceilUnits(
+                                        deficit.max(
+                                                recipe.receiptMinimum()
+                                                        .multiply(count)
+                                        ),
+                                        lot
+                                )
+                        )
+                )
+                .min(recipe.receiptMaximum().multiply(count));
+
+        long units = total.divide(lot, 0, RoundingMode.HALF_UP).longValue();
+
+        long base = units / receipts;
+
+        long extra = units % receipts;
+
+        List<BigDecimal> draws = new ArrayList<>();
+
+        for (int position = 0; position < receipts; position++) {
+
+            draws.add(
+                    lot.multiply(
+                            BigDecimal.valueOf(
+                                    base + (position < extra ? 1 : 0)
+                            )
+                    )
+            );
+
+        }
+
+        return draws;
+
+    }
+
+    private List<BigDecimal> coverDraws(
+            MaterialRef material,
+            BigDecimal need,
+            BigDecimal stock
+    ) {
+
+        BigDecimal threshold = need.add(
+                need.multiply(
+                        BigDecimal.valueOf(material.recipe().coverDays())
+                )
+        );
+
+        List<BigDecimal> draws = new ArrayList<>();
+
+        BigDecimal held = stock;
+
+        while (held.compareTo(threshold) < 0 && draws.size() < 8) {
+
+            BigDecimal quantity = drawQuantity(
+                    material,
+                    threshold.subtract(held)
+            );
+
+            draws.add(quantity);
+
+            held = held.add(quantity);
+
+        }
+
+        return draws;
+
+    }
+
     private BigDecimal drawQuantity(
             MaterialRef material,
-            BigDecimal deficit,
-            BigDecimal need,
-            boolean runDown
+            BigDecimal deficit
     ) {
 
         MaterialSeeder.Recipe recipe = material.recipe();
@@ -955,16 +1286,6 @@ public class ProductionOperationSeeder {
         BigDecimal lot = recipe.receiptLotSize();
 
         long units = ceilUnits(deficit, lot);
-
-        if (runDown) {
-
-            return lot.multiply(
-                    BigDecimal.valueOf(
-                            Math.max(units, ceilUnits(need, lot))
-                    )
-            );
-
-        }
 
         long minimum = ceilUnits(recipe.receiptMinimum(), lot);
 
@@ -1224,9 +1545,14 @@ public class ProductionOperationSeeder {
             LocalDate date
     ) {
 
-        return "LOT-%s-%s".formatted(
-                line.code(),
+        String key = "%s-%s".formatted(
+                line.recipe().lotPrefix(),
                 date.format(LOT_DATE)
+        );
+
+        return "%s-%02d".formatted(
+                key,
+                lotSequences.merge(key, 1, Integer::sum)
         );
 
     }
@@ -1605,19 +1931,19 @@ public class ProductionOperationSeeder {
 
     private void seedFinalBulkDelivery() {
 
-        MaterialRef sand = materialsById.values().stream()
-                .filter(material -> MaterialSeeder.SAND.equals(material.code()))
+        MaterialRef additive = materialsById.values().stream()
+                .filter(material -> MaterialSeeder.RDP.equals(material.code()))
                 .findFirst()
                 .orElse(null);
 
-        if (sand == null) {
+        if (additive == null) {
             return;
         }
 
         seedMaterialReceipt(
                 end,
-                sand.supplierId(),
-                List.of(new ReceiptDraw(sand, FINAL_BULK_SAND))
+                additive.supplierId(),
+                List.of(new ReceiptDraw(additive, FINAL_BULK_RDP))
         );
 
     }
