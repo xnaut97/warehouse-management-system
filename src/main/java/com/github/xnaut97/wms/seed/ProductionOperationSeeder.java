@@ -93,6 +93,12 @@ public class ProductionOperationSeeder {
     ) {
     }
 
+    private record Requirement(
+            Map<Long, BigDecimal> totals,
+            Map<Long, Map<Long, BigDecimal>> byProduct
+    ) {
+    }
+
     private record ReceiptDraw(
             MaterialRef material,
             BigDecimal quantity
@@ -293,13 +299,14 @@ public class ProductionOperationSeeder {
 
                 Map<Long, Integer> plan = productionPlan(date);
 
-                Map<Long, BigDecimal> requirement = materialRequirement(plan);
+                Requirement requirement = materialRequirement(plan);
 
-                replenishMaterials(date, requirement);
+                replenishMaterials(date, requirement.totals());
 
-                seedProductionIssue(date, requirement);
+                Map<Long, BigDecimal> issuedPrices =
+                        seedProductionIssue(date, requirement.totals());
 
-                seedProductionReceipt(date, plan);
+                seedProductionReceipt(date, plan, requirement, issuedPrices);
 
             }
 
@@ -779,15 +786,22 @@ public class ProductionOperationSeeder {
 
     }
 
-    private Map<Long, BigDecimal> materialRequirement(Map<Long, Integer> plan) {
+    private Requirement materialRequirement(Map<Long, Integer> plan) {
 
         Map<Long, BigDecimal> requirement = new LinkedHashMap<>();
+
+        Map<Long, Map<Long, BigDecimal>> byProduct = new LinkedHashMap<>();
 
         for (Map.Entry<Long, Integer> entry : plan.entrySet()) {
 
             ProductLine line = lineOf(entry.getKey());
 
             BigDecimal produced = BigDecimal.valueOf(entry.getValue());
+
+            Map<Long, BigDecimal> lines = byProduct.computeIfAbsent(
+                    entry.getKey(),
+                    productId -> new LinkedHashMap<>()
+            );
 
             for (BomLine bom : line.bom()) {
 
@@ -810,9 +824,18 @@ public class ProductionOperationSeeder {
                                 )
                 );
 
+                BigDecimal issued =
+                        quantize(used.min(ceiling), base, bom.unit());
+
                 requirement.merge(
                         bom.materialId(),
-                        quantize(used.min(ceiling), base, bom.unit()),
+                        issued,
+                        BigDecimal::add
+                );
+
+                lines.merge(
+                        bom.materialId(),
+                        issued,
                         BigDecimal::add
                 );
 
@@ -820,7 +843,7 @@ public class ProductionOperationSeeder {
 
         }
 
-        return requirement;
+        return new Requirement(requirement, byProduct);
 
     }
 
@@ -1030,7 +1053,7 @@ public class ProductionOperationSeeder {
 
     }
 
-    private void seedProductionIssue(
+    private Map<Long, BigDecimal> seedProductionIssue(
             LocalDate date,
             Map<Long, BigDecimal> requirement
     ) {
@@ -1053,7 +1076,13 @@ public class ProductionOperationSeeder {
                 date
         );
 
+        Map<Long, BigDecimal> prices = new LinkedHashMap<>();
+
         for (Map.Entry<Long, BigDecimal> entry : requirement.entrySet()) {
+
+            BigDecimal unitPrice = currentPrice(entry.getKey());
+
+            prices.put(entry.getKey(), unitPrice);
 
             AddIssueItemRequest item = new AddIssueItemRequest();
 
@@ -1061,13 +1090,15 @@ public class ProductionOperationSeeder {
 
             item.setQuantity(entry.getValue());
 
-            item.setUnitPrice(currentPrice(entry.getKey()));
+            item.setUnitPrice(unitPrice);
 
             issueService.addItem(issueId, item);
 
         }
 
         issueService.confirm(issueId);
+
+        return prices;
 
     }
 
@@ -1081,7 +1112,9 @@ public class ProductionOperationSeeder {
 
     private void seedProductionReceipt(
             LocalDate date,
-            Map<Long, Integer> plan
+            Map<Long, Integer> plan,
+            Requirement requirement,
+            Map<Long, BigDecimal> issuedPrices
     ) {
 
         authenticate(nextOperator());
@@ -1119,7 +1152,13 @@ public class ProductionOperationSeeder {
 
             item.setExpirationDate(date.plusYears(1));
 
-            item.setUnitPrice(line.recipe().costPrice());
+            item.setUnitPrice(
+                    productionCost(
+                            requirement.byProduct().get(entry.getKey()),
+                            issuedPrices,
+                            entry.getValue()
+                    )
+            );
 
             productReceiptService.addItem(receiptId, item);
 
@@ -1128,6 +1167,37 @@ public class ProductionOperationSeeder {
         }
 
         productReceiptService.confirm(receiptId);
+
+    }
+
+    private BigDecimal productionCost(
+            Map<Long, BigDecimal> consumption,
+            Map<Long, BigDecimal> issuedPrices,
+            int producedQuantity
+    ) {
+
+        if (consumption == null || producedQuantity <= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal batchCost = BigDecimal.ZERO;
+
+        for (Map.Entry<Long, BigDecimal> entry : consumption.entrySet()) {
+
+            BigDecimal unitPrice = issuedPrices.getOrDefault(
+                    entry.getKey(),
+                    BigDecimal.ZERO
+            );
+
+            batchCost = batchCost.add(entry.getValue().multiply(unitPrice));
+
+        }
+
+        return batchCost.divide(
+                BigDecimal.valueOf(producedQuantity),
+                2,
+                RoundingMode.HALF_UP
+        );
 
     }
 

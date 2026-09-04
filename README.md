@@ -14,6 +14,7 @@ A Spring Boot REST API for managing a two-tier warehouse operation: raw material
 - [Getting started](#getting-started)
   - [Run with Docker Compose](#run-with-docker-compose)
   - [Run locally](#run-locally)
+- [Seed data](#seed-data)
 - [Configuration](#configuration)
 - [Seed accounts](#seed-accounts)
 - [Authentication](#authentication)
@@ -82,6 +83,87 @@ On Windows, use `mvnw.cmd`. To build a jar instead:
 ```
 
 Schema is managed by Hibernate (`ddl-auto: update`), and `src/main/resources/schema.sql` runs on every startup to apply idempotent migrations to existing installs. Roles, seed users, and a default warehouse are created on first boot by `DataInitializer`.
+
+## Seed data
+
+`DataInitializer` runs on every startup and drives the seeders in
+`src/main/java/com/github/xnaut97/wms/seed/`:
+
+| Seeder | Creates | Re-run behaviour |
+| --- | --- | --- |
+| `RoleSeeder`, `UserSeeder` | One role and one account per `RoleType` | Skips existing rows by role / username |
+| `WarehouseSeeder` | Material and product warehouses | Skips existing codes |
+| `SupplierSeeder`, `CustomerSeeder` | Suppliers by material group, customers by group | Skips existing codes |
+| `MaterialSeeder` | Sand, cement, HPMC, RDP and one packaging SKU per product | Skips existing codes |
+| `ProductSeeder` | The `TP-*` tile-adhesive SKUs | Skips existing codes |
+| `BOMSeeder` | One BOM per product, mixing ratios derived from the recipe | Skips products that already have a BOM |
+| `ProductionOperationSeeder` | ~13 months of operational history | Skips entirely once the primary product holds stock |
+| `SeedValidationReporter` | Nothing — validates and prints a PASS/FAIL table | Always runs |
+
+### What the operation seeder generates
+
+`ProductionOperationSeeder` replays the full business chain day by day, ending on
+the current date, and calls the same services the UI calls
+(`ReceiptService`, `IssueService`, `ProductReceiptService`, `ProductIssueService`,
+`StocktakingService`) rather than inserting rows directly. Inventory updates,
+stock validation, average-cost recalculation, lot creation and FEFO ordering are
+therefore the production code paths, not seeder copies.
+
+Per working day:
+
+1. A production plan of 800–900 bags, weighted so the premium `Keo 2` SKU takes
+   5–10% of annual volume and is produced in short campaigns rather than daily.
+2. Material requirements read from the **database BOM** for each product — no
+   formula is hardcoded in the seeder. Actual issue quantity is the BOM standard
+   plus a random draw bounded by that BOM line's `max_waste_ratio`.
+3. Material receipts raised beforehand whenever stock would not cover the issue,
+   respecting per-material packaging (sand in 38,400 kg containers, HPMC in
+   25 kg bags, RDP in 20 kg bags) with drifting purchase prices so the weighted
+   average cost is meaningful.
+4. A production material issue, then a finished-product receipt for exactly the
+   planned quantity, with a lot number and expiry of production date + 1 year.
+5. Seasonal sales that consume lots in expiry order through
+   `ProductStockService.getAvailableLots`.
+6. Stocktaking sessions, 4–8 per month, mostly matching with a minority carrying
+   a ±0.5–3% variance and a reason.
+
+Finished-product receipt cost is **derived**, not seeded: each line is priced at
+that batch's own material issue value divided by the bags produced, so the chain
+runs material receipt → `MaterialService.recalculateAveragePrice` → issue value →
+batch cost. `ProductService.recalculateAveragePrice` then maintains
+`products.average_price` from confirmed sales, unchanged by the seeder.
+
+### Alert demo conditions
+
+The seeder deliberately drives HPMC, RDP and the 20 kg packaging SKU below their
+minimum stock, pushes sand above its maximum with a final bulk delivery, and
+holds a small reserve on three production dates so those lots survive to sit
+60–90 days from expiry. Nothing is written to an alert table — `AlertService`
+derives all four alert types from this data at request time.
+
+### Re-running
+
+Master data is idempotent by code, so restarting the application is safe. The
+operation seeder is all-or-nothing: it skips as soon as the primary product has
+stock, so it will not top up a partially seeded database. To regenerate the
+operational history, drop and recreate the schema:
+
+```bash
+mysql -uroot -proot -e "DROP DATABASE warehouse_management; CREATE DATABASE warehouse_management CHARACTER SET utf8mb4;"
+```
+
+A full run takes roughly 10–15 minutes and produces on the order of 250 material
+receipts, 350 production issues and receipts, 1,200 sales issues and 70
+stocktaking sessions. Nothing in the seeder deletes or resets data on its own.
+
+### Validation
+
+`SeedValidationReporter` runs last and prints a PASS/FAIL line per check —
+negative inventory, BOM standard versus actual consumption against the allowed
+wastage, production plan and product mix, lot and expiry integrity, FEFO order,
+the inventory balance equation, the costing chain, stocktaking coverage and the
+alert conditions. It queries the database directly, so it reports on whatever is
+actually stored rather than on what the seeder intended.
 
 ## Configuration
 
@@ -180,7 +262,7 @@ src/main/java/com/github/xnaut97/wms/
 ├── factory/      Sample data factory used by seeders
 ├── repository/   Spring Data repositories
 ├── security/     JWT filter, user details, security configuration
-├── seed/         Role, user, and warehouse seeders
+├── seed/         Master data and operational seeders, plus seed validation
 └── service/      Business logic
 ```
 
