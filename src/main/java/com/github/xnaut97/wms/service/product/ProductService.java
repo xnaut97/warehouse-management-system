@@ -109,12 +109,9 @@ public class ProductService {
     )
     public void delete(Long id) {
 
-        Product product =
-                findProductById(id);
+        Product product = findProductById(id);
 
-        product.setEnabled(false);
-
-        repository.save(product);
+        repository.delete(product);
 
     }
 
