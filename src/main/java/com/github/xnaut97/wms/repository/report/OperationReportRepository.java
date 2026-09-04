@@ -31,6 +31,7 @@ public interface OperationReportRepository
             JOIN i.issue g
             JOIN i.material m
             WHERE g.status = :status
+              AND g.customer IS NULL
               AND g.issueDate BETWEEN :fromDate AND :toDate
             GROUP BY m.id, m.code, m.name, m.unit, m.unitPrice
             ORDER BY m.code
