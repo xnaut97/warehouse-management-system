@@ -8,7 +8,9 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -50,6 +52,14 @@ public class SeedValidationReporter {
 
         List<Check> checks = new ArrayList<>();
 
+        checks.add(productCatalog());
+
+        checks.add(packagingCatalog());
+
+        checks.add(bomSpecification());
+
+        checks.add(materialReceiptRules());
+
         checks.add(negativeInventory());
 
         checks.add(bomConsistency());
@@ -80,6 +90,248 @@ public class SeedValidationReporter {
             );
 
         }
+
+    }
+
+    private Check productCatalog() {
+
+        List<String> problems = new ArrayList<>();
+
+        for (ProductSeeder.Recipe recipe : ProductSeeder.RECIPES) {
+
+            Map<String, Object> row = row("""
+                    SELECT minimum_stock, maximum_stock, unit, category
+                    FROM products WHERE code = ?
+                    """, recipe.code());
+
+            if (row == null) {
+
+                problems.add(recipe.code() + " missing");
+
+                continue;
+
+            }
+
+            if (!matches(row.get("minimum_stock"), recipe.minimumStock())
+                    || !matches(row.get("maximum_stock"), recipe.maximumStock())) {
+
+                problems.add(recipe.code() + " min/max");
+
+            }
+
+            if (!recipe.category().equals(row.get("category"))) {
+
+                problems.add(recipe.code() + " category");
+
+            }
+
+        }
+
+        return new Check(
+                "Product catalog and min/max",
+                problems.isEmpty(),
+                problems.isEmpty()
+                        ? "%d SKUs match".formatted(ProductSeeder.RECIPES.size())
+                        : String.join(", ", problems)
+        );
+
+    }
+
+    private Check packagingCatalog() {
+
+        List<String> problems = new ArrayList<>();
+
+        for (ProductSeeder.Recipe product : ProductSeeder.RECIPES) {
+
+            Map<String, Object> row = row("""
+                    SELECT minimum_stock, maximum_stock, unit
+                    FROM materials WHERE code = ?
+                    """, product.packagingCode());
+
+            if (row == null) {
+
+                problems.add(product.packagingCode() + " missing");
+
+                continue;
+
+            }
+
+            if (!matches(
+                    row.get("minimum_stock"),
+                    MaterialSeeder.PACKAGING_MINIMUM_STOCK
+            ) || !matches(
+                    row.get("maximum_stock"),
+                    MaterialSeeder.PACKAGING_MAXIMUM_STOCK
+            )) {
+
+                problems.add(product.packagingCode() + " min/max");
+
+            }
+
+            long linked = count("""
+                    SELECT COUNT(*) FROM bom_items bi
+                    JOIN boms b ON b.id = bi.bom_id
+                    JOIN products p ON p.id = b.product_id
+                    JOIN materials m ON m.id = bi.raw_material_id
+                    WHERE p.code = ? AND m.code = ?
+                    """, product.code(), product.packagingCode());
+
+            if (linked != 1) {
+
+                problems.add(product.code() + " packaging not in BOM");
+
+            }
+
+        }
+
+        long shared = count("""
+                SELECT COUNT(*) FROM (
+                  SELECT bi.raw_material_id
+                  FROM bom_items bi
+                  JOIN materials m ON m.id = bi.raw_material_id
+                  WHERE m.unit = ?
+                  GROUP BY 1 HAVING COUNT(DISTINCT bi.bom_id) > 1
+                ) x
+                """, MaterialSeeder.PIECE_UNIT);
+
+        return new Check(
+                "Packaging SKU per product",
+                problems.isEmpty() && shared == 0,
+                problems.isEmpty()
+                        ? "%d packaging SKUs, %d shared"
+                        .formatted(ProductSeeder.RECIPES.size(), shared)
+                        : String.join(", ", problems)
+        );
+
+    }
+
+    private Check bomSpecification() {
+
+        List<String> problems = new ArrayList<>();
+
+        for (BOMSeeder.Formula formula : BOMSeeder.FORMULAS) {
+
+            List<BOMSeeder.Line> expected = BOMSeeder.allLines(formula);
+
+            List<Map<String, Object>> actual = jdbcTemplate.queryForList("""
+                    SELECT m.code, bi.consumption_quantity, bi.mixing_ratio,
+                           bi.max_waste_ratio
+                    FROM boms b
+                    JOIN products p ON p.id = b.product_id
+                    JOIN bom_items bi ON bi.bom_id = b.id
+                    JOIN materials m ON m.id = bi.raw_material_id
+                    WHERE b.code = ? AND p.code = ? AND b.enabled = 1
+                    """, formula.code(), formula.productCode());
+
+            if (actual.size() != expected.size()) {
+
+                problems.add("%s %d/%d items".formatted(
+                        formula.code(), actual.size(), expected.size()));
+
+                continue;
+
+            }
+
+            Map<String, Map<String, Object>> byCode = new LinkedHashMap<>();
+
+            actual.forEach(row -> byCode.put((String) row.get("code"), row));
+
+            for (BOMSeeder.Line line : expected) {
+
+                Map<String, Object> row = byCode.get(line.materialCode());
+
+                if (row == null
+                        || !matches(
+                        row.get("consumption_quantity"),
+                        line.consumptionQuantity()
+                )
+                        || !matches(
+                        row.get("mixing_ratio"),
+                        line.mixingRatio()
+                )
+                        || !matches(
+                        row.get("max_waste_ratio"),
+                        line.maxWasteRatio()
+                )) {
+
+                    problems.add(
+                            formula.code() + "/" + line.materialCode()
+                    );
+
+                }
+
+            }
+
+        }
+
+        return new Check(
+                "BOM matches specification",
+                problems.isEmpty(),
+                problems.isEmpty()
+                        ? "%d BOMs match".formatted(BOMSeeder.FORMULAS.size())
+                        : String.join(", ", problems)
+        );
+
+    }
+
+    private Check materialReceiptRules() {
+
+        long sand = count("""
+                SELECT COUNT(*) FROM goods_receipt_items gri
+                JOIN materials m ON m.id = gri.material_id
+                WHERE m.code = ? AND MOD(gri.quantity, ?) <> 0
+                """, MaterialSeeder.SAND, MaterialSeeder.SAND_CONTAINER);
+
+        long cement = count("""
+                SELECT COUNT(*) FROM goods_receipt_items gri
+                JOIN materials m ON m.id = gri.material_id
+                WHERE m.code = ? AND (gri.quantity < ? OR gri.quantity > ?)
+                """,
+                MaterialSeeder.CEMENT,
+                MaterialSeeder.CEMENT_RECEIPT_MINIMUM,
+                MaterialSeeder.CEMENT_RECEIPT_MAXIMUM
+        );
+
+        long hpmc = count("""
+                SELECT COUNT(*) FROM goods_receipt_items gri
+                JOIN materials m ON m.id = gri.material_id
+                WHERE m.code = ? AND MOD(gri.quantity, ?) <> 0
+                """, MaterialSeeder.HPMC, MaterialSeeder.HPMC_LOT);
+
+        long rdp = count("""
+                SELECT COUNT(*) FROM goods_receipt_items gri
+                JOIN materials m ON m.id = gri.material_id
+                WHERE m.code = ? AND MOD(gri.quantity, ?) <> 0
+                """, MaterialSeeder.RDP, MaterialSeeder.RDP_LOT);
+
+        return new Check(
+                "Material receipt size rules",
+                sand == 0 && cement == 0 && hpmc == 0 && rdp == 0,
+                "sand %d, cement %d, hpmc %d, rdp %d off-spec"
+                        .formatted(sand, cement, hpmc, rdp)
+        );
+
+    }
+
+    private boolean matches(
+            Object actual,
+            BigDecimal expected
+    ) {
+
+        return actual instanceof BigDecimal value
+                && value.compareTo(expected) == 0;
+
+    }
+
+    private Map<String, Object> row(
+            String sql,
+            Object... args
+    ) {
+
+        List<Map<String, Object>> rows =
+                jdbcTemplate.queryForList(sql, args);
+
+        return rows.isEmpty() ? null : rows.getFirst();
 
     }
 
@@ -264,7 +516,7 @@ public class SeedValidationReporter {
                 WHERE quantity > 0
                   AND expiration_date IS NOT NULL
                   AND expiration_date
-                      BETWEEN DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+                      BETWEEN DATE_ADD(CURDATE(), INTERVAL 60 DAY)
                           AND DATE_ADD(CURDATE(), INTERVAL 90 DAY)
                 """);
 
@@ -425,9 +677,12 @@ public class SeedValidationReporter {
 
     }
 
-    private long count(String sql) {
+    private long count(
+            String sql,
+            Object... args
+    ) {
 
-        Long value = jdbcTemplate.queryForObject(sql, Long.class);
+        Long value = jdbcTemplate.queryForObject(sql, Long.class, args);
 
         return value == null ? 0 : value;
 

@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -18,8 +19,13 @@ public class ProductSeeder {
             String name,
             String specification,
             String category,
+            String lotPrefix,
+            String packagingCode,
+            String packagingName,
+            BigDecimal packagingPrice,
             BigDecimal salePrice,
             int outputWeight,
+            boolean premium,
             BigDecimal minimumStock,
             BigDecimal maximumStock
     ) {
@@ -33,34 +39,109 @@ public class ProductSeeder {
 
     public static final List<Recipe> RECIPES = List.of(
             new Recipe(
-                    "TP-C1-25",
-                    "Keo dán gạch C1",
-                    "Bao 25kg, keo dán gạch gốc xi măng, thi công nội thất",
+                    "MAT-C1-25X",
+                    "Mastik Pro 25Kg Xanh",
+                    "Bao 25kg, keo dán gạch C1 gốc xi măng",
                     C1_CATEGORY,
+                    "MTX25",
+                    "PKG-MAT-25X",
+                    "Vỏ bao Keo Mastik Pro 25Kg Xanh",
+                    BigDecimal.valueOf(4200),
                     BigDecimal.valueOf(95000),
-                    5,
-                    BigDecimal.valueOf(1000),
-                    BigDecimal.valueOf(20000)
-            ),
-            new Recipe(
-                    "TP-C1-20",
-                    "Keo dán gạch C1 chống trượt",
-                    "Bao 20kg, keo dán gạch gốc xi măng, chống trượt cho tường đứng",
-                    C1_CATEGORY,
-                    BigDecimal.valueOf(82000),
-                    3,
-                    BigDecimal.valueOf(800),
+                    6,
+                    false,
+                    BigDecimal.valueOf(3000),
                     BigDecimal.valueOf(15000)
             ),
             new Recipe(
-                    "TP-C2-25",
-                    "Keo dán gạch C2",
-                    "Bao 25kg, keo dán gạch gốc xi măng cường độ cao, dùng cho gạch khổ lớn",
+                    "MAT-C1-25V",
+                    "Mastik Pro 25Kg Vàng",
+                    "Bao 25kg, keo dán gạch C1 gốc xi măng",
+                    C1_CATEGORY,
+                    "MTV25",
+                    "PKG-MAT-25V",
+                    "Vỏ bao Keo Mastik Pro 25Kg Vàng",
+                    BigDecimal.valueOf(4200),
+                    BigDecimal.valueOf(96000),
+                    5,
+                    false,
+                    BigDecimal.valueOf(3000),
+                    BigDecimal.valueOf(15000)
+            ),
+            new Recipe(
+                    "PUT-C1-25D",
+                    "PuThai 25Kg Đỏ",
+                    "Bao 25kg, keo dán gạch C1 gốc xi măng",
+                    C1_CATEGORY,
+                    "PTD25",
+                    "PKG-PUT-25D",
+                    "Vỏ bao Keo PuThai 25Kg Đỏ",
+                    BigDecimal.valueOf(4300),
+                    BigDecimal.valueOf(92000),
+                    5,
+                    false,
+                    BigDecimal.valueOf(3000),
+                    BigDecimal.valueOf(15000)
+            ),
+            new Recipe(
+                    "PUT-C1-25C",
+                    "PuThai 25Kg Cam",
+                    "Bao 25kg, keo dán gạch C1 gốc xi măng",
+                    C1_CATEGORY,
+                    "PTC25",
+                    "PKG-PUT-25C",
+                    "Vỏ bao Keo PuThai 25Kg Cam",
+                    BigDecimal.valueOf(4300),
+                    BigDecimal.valueOf(93000),
+                    3,
+                    false,
+                    BigDecimal.valueOf(2000),
+                    BigDecimal.valueOf(10000)
+            ),
+            new Recipe(
+                    "MAT-C1-20D",
+                    "Mastik Pro 20Kg Đỏ",
+                    "Bao 20kg, keo dán gạch C1 gốc xi măng",
+                    C1_CATEGORY,
+                    "MTD20",
+                    "PKG-MAT-20D",
+                    "Vỏ bao Keo Mastik Pro 20Kg Đỏ",
+                    BigDecimal.valueOf(3900),
+                    BigDecimal.valueOf(78000),
+                    3,
+                    false,
+                    BigDecimal.valueOf(2000),
+                    BigDecimal.valueOf(10000)
+            ),
+            new Recipe(
+                    "MAT-C1-20X",
+                    "Mastik Pro 20Kg Xanh",
+                    "Bao 20kg, keo dán gạch C1 gốc xi măng",
+                    C1_CATEGORY,
+                    "MTX20",
+                    "PKG-MAT-20X",
+                    "Vỏ bao Keo Mastik Pro 20Kg Xanh",
+                    BigDecimal.valueOf(3900),
+                    BigDecimal.valueOf(78500),
+                    3,
+                    false,
+                    BigDecimal.valueOf(2000),
+                    BigDecimal.valueOf(10000)
+            ),
+            new Recipe(
+                    "MAT-C2-20",
+                    "Mastik Pro C2 20Kg",
+                    "Bao 20kg, keo dán gạch C2 cường độ cao",
                     C2_CATEGORY,
+                    "MTC20",
+                    "PKG-MAT-C2-20",
+                    "Vỏ bao Keo Mastik Pro C2 20Kg",
+                    BigDecimal.valueOf(4100),
                     BigDecimal.valueOf(135000),
                     2,
-                    BigDecimal.valueOf(600),
-                    BigDecimal.valueOf(12000)
+                    true,
+                    BigDecimal.valueOf(1000),
+                    BigDecimal.valueOf(8000)
             )
     );
 
@@ -69,6 +150,14 @@ public class ProductSeeder {
     private final ProductRepository repository;
 
     private final SampleDataFactory factory;
+
+    public static Optional<Recipe> findRecipe(String code) {
+
+        return RECIPES.stream()
+                .filter(recipe -> recipe.code().equals(code))
+                .findFirst();
+
+    }
 
     @Transactional
     public void seed() {
