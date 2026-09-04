@@ -6,6 +6,7 @@ import com.github.xnaut97.wms.seed.MaterialSeeder;
 import com.github.xnaut97.wms.seed.ProductSeeder;
 import com.github.xnaut97.wms.seed.ProductionOperationSeeder;
 import com.github.xnaut97.wms.seed.RoleSeeder;
+import com.github.xnaut97.wms.seed.SeedValidationReporter;
 import com.github.xnaut97.wms.seed.SupplierSeeder;
 import com.github.xnaut97.wms.seed.UserSeeder;
 import com.github.xnaut97.wms.seed.WarehouseSeeder;
@@ -29,6 +30,7 @@ public class DataInitializer implements CommandLineRunner {
     private final ProductSeeder productSeeder;
     private final BOMSeeder bomSeeder;
     private final ProductionOperationSeeder productionOperationSeeder;
+    private final SeedValidationReporter seedValidationReporter;
 
     @Override
     public void run(String @NonNull ... args) {
@@ -42,6 +44,7 @@ public class DataInitializer implements CommandLineRunner {
         productSeeder.seed();
         bomSeeder.seed();
         productionOperationSeeder.seed();
+        seedValidationReporter.report();
     }
 
 }
