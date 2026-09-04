@@ -81,6 +81,11 @@ public class ReceiptService {
                 .receiptDate(receipt.getReceiptDate())
                 .status(receipt.getStatus())
                 .totalAmount(receipt.getTotalAmount())
+                .createdBy(
+                        receipt.getCreatedBy().getFullName() != null
+                                ? receipt.getCreatedBy().getFullName()
+                                : receipt.getCreatedBy().getUsername()
+                )
                 .items(items)
                 .build();
 
