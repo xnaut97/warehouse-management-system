@@ -30,5 +30,7 @@ public class ProductIssueDetailResponse {
 
     private BigDecimal totalAmount;
 
+    private String createdBy;
+
     private List<ProductIssueItemResponse> items;
 }

@@ -28,6 +28,8 @@ public class IssueDetailResponse {
 
     private BigDecimal totalAmount;
 
+    private String createdBy;
+
     private List<IssueItemResponse> items;
 
 }

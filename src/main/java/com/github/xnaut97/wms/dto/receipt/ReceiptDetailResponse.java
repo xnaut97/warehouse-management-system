@@ -26,6 +26,8 @@ public class ReceiptDetailResponse {
 
     private BigDecimal totalAmount;
 
+    private String createdBy;
+
     private List<ReceiptItemResponse> items;
 
 }

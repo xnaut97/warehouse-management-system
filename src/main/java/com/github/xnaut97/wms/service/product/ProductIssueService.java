@@ -89,6 +89,11 @@ public class ProductIssueService {
                 .issueDate(issue.getIssueDate())
                 .status(issue.getStatus())
                 .totalAmount(issue.getTotalAmount())
+                .createdBy(
+                        issue.getCreatedBy().getFullName() != null
+                                ? issue.getCreatedBy().getFullName()
+                                : issue.getCreatedBy().getUsername()
+                )
                 .items(items)
                 .build();
     }
