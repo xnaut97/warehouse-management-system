@@ -1,8 +1,6 @@
 package com.github.xnaut97.wms.repository.inventory;
 
-import com.github.xnaut97.wms.dto.dashboard.SlowMovingMaterialResponse;
 import com.github.xnaut97.wms.entity.inventory.InventoryTransaction;
-import com.github.xnaut97.wms.enums.InventoryTransactionType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -75,42 +73,6 @@ public interface InventoryTransactionRepository
             ORDER BY YEAR(t.createdAt), MONTH(t.createdAt)
             """)
     List<Object[]> inventoryTrend();
-
-    @Query("""
-            SELECT new com.github.xnaut97.wms.dto.dashboard.SlowMovingMaterialResponse(
-            m.code,
-            m.name,
-            (
-                SELECT COALESCE(SUM(i.quantity),0)
-                FROM MaterialInventory i
-                WHERE i.material = m
-            ),
-            (
-                SELECT MAX(t.createdAt)
-                FROM InventoryTransaction t
-                WHERE t.material = m
-                AND t.type = :type
-            )
-            )
-            FROM Material m
-            WHERE NOT EXISTS (
-                SELECT recentTransaction
-                FROM InventoryTransaction recentTransaction
-                WHERE recentTransaction.material = m
-                AND recentTransaction.type = :type
-                AND recentTransaction.createdAt >= :cutoff
-            )
-            ORDER BY m.code
-            """)
-    List<SlowMovingMaterialResponse> findSlowMovingMaterials(
-
-            @Param("type")
-            InventoryTransactionType type,
-
-            @Param("cutoff")
-            LocalDateTime cutoff
-
-    );
 
     @Query("""
             SELECT t

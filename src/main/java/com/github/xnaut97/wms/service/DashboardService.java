@@ -9,6 +9,7 @@ import com.github.xnaut97.wms.repository.goods.GoodsReceiptItemRepository;
 import com.github.xnaut97.wms.repository.inventory.MaterialInventoryRepository;
 import com.github.xnaut97.wms.repository.inventory.ProductInventoryRepository;
 import com.github.xnaut97.wms.repository.inventory.InventoryTransactionRepository;
+import com.github.xnaut97.wms.repository.product.ProductIssueItemRepository;
 import com.github.xnaut97.wms.repository.product.ProductIssueRepository;
 import com.github.xnaut97.wms.repository.product.ProductReceiptRepository;
 import com.github.xnaut97.wms.repository.product.ProductRepository;
@@ -62,6 +63,8 @@ public class DashboardService {
     private final ProductReceiptRepository productReceiptRepository;
 
     private final ProductIssueRepository productIssueRepository;
+
+    private final ProductIssueItemRepository productIssueItemRepository;
 
     private final InventoryTransactionRepository transactionRepository;
 
@@ -329,8 +332,8 @@ public class DashboardService {
                 )
 
                 .slowMovingMaterials(
-                        transactionRepository.findSlowMovingMaterials(
-                                InventoryTransactionType.OUT,
+                        productIssueItemRepository.findSlowMovingProducts(
+                                IssueStatus.CONFIRMED,
                                 LocalDateTime.now().minusDays(90)
                         )
                 )
