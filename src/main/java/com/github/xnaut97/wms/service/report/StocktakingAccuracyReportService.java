@@ -138,15 +138,11 @@ public class StocktakingAccuracyReportService {
                         ? 0
                         : totals.getDiscrepancyItems();
 
-        if (systemQuantity.compareTo(BigDecimal.ZERO) == 0) {
+        if (totalItems == 0) {
 
             return StocktakingAccuracyResponse.builder()
                     .available(false)
-                    .unavailableReason(
-                            totalItems == 0
-                                    ? "NO_COMPLETED_STOCKTAKING"
-                                    : "ZERO_BOOK_QUANTITY"
-                    )
+                    .unavailableReason("NO_COMPLETED_STOCKTAKING")
                     .totalSystemQuantity(scaled(systemQuantity))
                     .totalPhysicalQuantity(scaled(physicalQuantity))
                     .totalItems(totalItems)
@@ -159,9 +155,13 @@ public class StocktakingAccuracyReportService {
         return StocktakingAccuracyResponse.builder()
                 .available(true)
                 .accuracyPercent(
-                        physicalQuantity
+                        BigDecimal.valueOf(totalItems - discrepancyItems)
                                 .multiply(BigDecimal.valueOf(100))
-                                .divide(systemQuantity, SCALE, RoundingMode.HALF_UP)
+                                .divide(
+                                        BigDecimal.valueOf(totalItems),
+                                        SCALE,
+                                        RoundingMode.HALF_UP
+                                )
                 )
                 .totalSystemQuantity(scaled(systemQuantity))
                 .totalPhysicalQuantity(scaled(physicalQuantity))
@@ -169,7 +169,6 @@ public class StocktakingAccuracyReportService {
                 .discrepancyItems(discrepancyItems)
                 .completedStocktakings(completedStocktakings)
                 .build();
-
     }
 
     private StocktakingVarianceValueResponse buildVarianceValue(
