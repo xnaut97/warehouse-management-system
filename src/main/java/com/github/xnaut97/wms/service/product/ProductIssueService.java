@@ -176,6 +176,9 @@ public class ProductIssueService {
                         null
                 );
 
+        // Giai đoạn 3: Lấy giá vốn TB từ danh mục SP, không cho user nhập tay
+        BigDecimal unitPrice = product.getAveragePrice();
+
         ProductIssueItem item =
                 new ProductIssueItem();
 
@@ -184,11 +187,11 @@ public class ProductIssueService {
         item.setQuantity(request.getQuantity());
         item.setLotNumber(lotNumber);
         item.setExpirationDate(inventory.getExpirationDate());
-        item.setUnitPrice(request.getUnitPrice());
+        item.setUnitPrice(unitPrice);
         item.setAmount(
                 calculateAmount(
                         request.getQuantity(),
-                        request.getUnitPrice()
+                        unitPrice
                 )
         );
 
@@ -239,15 +242,18 @@ public class ProductIssueService {
                         item.getId()
                 );
 
+        // Giai đoạn 3: Lấy giá vốn TB từ danh mục SP, không cho user nhập tay
+        BigDecimal unitPrice = item.getProduct().getAveragePrice();
+
         item.setQuantity(request.getQuantity());
         item.setLotNumber(lotNumber);
         item.setExpirationDate(inventory.getExpirationDate());
-        item.setUnitPrice(request.getUnitPrice());
+        item.setUnitPrice(unitPrice);
 
         item.setAmount(
                 calculateAmount(
                         request.getQuantity(),
-                        request.getUnitPrice()
+                        unitPrice
                 )
         );
 
