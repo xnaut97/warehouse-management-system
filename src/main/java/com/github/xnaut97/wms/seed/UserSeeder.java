@@ -57,8 +57,8 @@ public class UserSeeder {
                                 "board@wms.com",
                                 roleRepository.findByRole(RoleType.EXECUTIVE_BOARD).orElseThrow()
                         ))
-                .filter(user -> !userRepository.existsByEmail(user.getEmail())
-                        || !userRepository.existsByUsername(user.getUsername()))
+                .filter(user -> !userRepository.existsByUsername(user.getUsername())
+                        && (user.getEmail() == null || !userRepository.existsByEmail(user.getEmail())))
                 .forEach(userRepository::save);
 
         System.out.println("✓ Users seeded");
