@@ -412,11 +412,6 @@ public class ProductIssueService {
         issue.setStatus(IssueStatus.CONFIRMED);
 
         repository.save(issue);
-
-        items.stream()
-                .map(item -> item.getProduct().getId())
-                .distinct()
-                .forEach(productService::recalculateAveragePrice);
     }
 
     public ProductIssue findById(Long id) {

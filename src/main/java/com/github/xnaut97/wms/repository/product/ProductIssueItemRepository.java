@@ -16,19 +16,6 @@ public interface ProductIssueItemRepository extends JpaRepository<ProductIssueIt
     List<ProductIssueItem> findByIssueId(Long issueId);
 
     @Query("""
-            SELECT SUM(i.quantity * i.unitPrice) / NULLIF(SUM(i.quantity), 0)
-            FROM ProductIssueItem i
-            WHERE i.product.id = :productId
-              AND i.unitPrice IS NOT NULL
-              AND i.quantity > 0
-              AND i.issue.status = :status
-            """)
-    BigDecimal calculateAveragePrice(
-            @Param("productId") Long productId,
-            @Param("status") IssueStatus status
-    );
-
-    @Query("""
             SELECT COALESCE(SUM(i.quantity),0)
             FROM ProductIssueItem i
             """)

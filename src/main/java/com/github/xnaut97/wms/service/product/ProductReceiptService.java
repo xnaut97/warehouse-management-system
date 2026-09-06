@@ -2,6 +2,7 @@ package com.github.xnaut97.wms.service.product;
 
 import com.github.xnaut97.wms.annotation.Audit;
 import com.github.xnaut97.wms.dto.product.receipt.*;
+import com.github.xnaut97.wms.entity.bom.BOM;
 import com.github.xnaut97.wms.entity.common.Warehouse;
 import com.github.xnaut97.wms.entity.inventory.ProductInventory;
 import com.github.xnaut97.wms.entity.material.Supplier;
@@ -14,6 +15,7 @@ import com.github.xnaut97.wms.enums.DocumentType;
 import com.github.xnaut97.wms.enums.ReceiptStatus;
 import com.github.xnaut97.wms.enums.StockGroup;
 import com.github.xnaut97.wms.exception.BusinessException;
+import com.github.xnaut97.wms.repository.bom.BOMRepository;
 import com.github.xnaut97.wms.repository.inventory.ProductInventoryRepository;
 import com.github.xnaut97.wms.repository.product.ProductReceiptItemRepository;
 import com.github.xnaut97.wms.repository.product.ProductReceiptRepository;
@@ -30,7 +32,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +49,8 @@ public class ProductReceiptService {
 
     private final ProductService productService;
 
+    private final BOMRepository bomRepository;
+
     private final SupplierService supplierService;
 
     private final WarehouseService warehouseService;
@@ -51,6 +58,8 @@ public class ProductReceiptService {
     private final UserService userService;
 
     private final DocumentNumberService generator;
+
+    private static final int PRICE_SCALE = 2;
 
     public Page<ProductReceiptResponse> getAll(Pageable pageable) {
         return repository.findAll(pageable)
@@ -164,9 +173,12 @@ public class ProductReceiptService {
                         request.getProductId()
                 );
 
+        BigDecimal unitPrice =
+                calculateUnitPriceFromBOM(product);
+
         BigDecimal amount = calculateAmount(
                 request.getQuantity(),
-                request.getUnitPrice()
+                unitPrice
         );
 
         ProductReceiptItem item =
@@ -177,7 +189,7 @@ public class ProductReceiptService {
         item.setQuantity(request.getQuantity());
         item.setLotNumber(request.getLotNumber());
         item.setExpirationDate(request.getExpirationDate());
-        item.setUnitPrice(request.getUnitPrice());
+        item.setUnitPrice(unitPrice);
         item.setAmount(amount);
 
         itemRepository.save(item);
@@ -212,15 +224,20 @@ public class ProductReceiptService {
                         )
                 );
 
+        BigDecimal unitPrice =
+                calculateUnitPriceFromBOM(
+                        item.getProduct()
+                );
+
         item.setQuantity(request.getQuantity());
         item.setLotNumber(request.getLotNumber());
         item.setExpirationDate(request.getExpirationDate());
-        item.setUnitPrice(request.getUnitPrice());
+        item.setUnitPrice(unitPrice);
 
         item.setAmount(
                 calculateAmount(
                         request.getQuantity(),
-                        request.getUnitPrice()
+                        unitPrice
                 )
         );
 
@@ -337,6 +354,46 @@ public class ProductReceiptService {
         receipt.setStatus(ReceiptStatus.CONFIRMED);
 
         repository.save(receipt);
+
+        // Giai đoạn 2: Tính lại Giá vốn trung bình (MAC) cho mỗi sản phẩm
+        // Gom các dòng theo productId để tính tổng SL nhập & bình quân đơn giá
+        Map<Long, List<ProductReceiptItem>> itemsByProduct =
+                items.stream()
+                        .collect(Collectors.groupingBy(
+                                item -> item.getProduct().getId()
+                        ));
+
+        for (Map.Entry<Long, List<ProductReceiptItem>> entry
+                : itemsByProduct.entrySet()) {
+
+            Long productId = entry.getKey();
+            List<ProductReceiptItem> productItems = entry.getValue();
+
+            BigDecimal totalNewQty = productItems.stream()
+                    .map(ProductReceiptItem::getQuantity)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal totalNewValue = productItems.stream()
+                    .map(item -> item.getQuantity()
+                            .multiply(item.getUnitPrice() != null
+                                    ? item.getUnitPrice()
+                                    : BigDecimal.ZERO))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal weightedUnitPrice =
+                    totalNewQty.compareTo(BigDecimal.ZERO) > 0
+                            ? totalNewValue.divide(
+                                    totalNewQty,
+                                    PRICE_SCALE,
+                                    RoundingMode.HALF_UP)
+                            : BigDecimal.ZERO;
+
+            productService.updateAverageCost(
+                    productId,
+                    totalNewQty,
+                    weightedUnitPrice
+            );
+        }
     }
 
     public ProductReceipt findById(Long id) {
@@ -435,6 +492,44 @@ public class ProductReceiptService {
         }
 
         return quantity.multiply(unitPrice);
+    }
+
+    /**
+     * Giai đoạn 1: Tính đơn giá nhập thành phẩm từ BOM × giá vốn NVL.
+     *
+     * Đơn giá nhập = ∑ (consumptionQuantity × giá vốn trung bình NVL)
+     * (consumptionQuantity là lượng NVL cần cho 1 đơn vị SP)
+     */
+    private BigDecimal calculateUnitPriceFromBOM(Product product) {
+
+        BOM bom = bomRepository
+                .findFirstByProductIdAndEnabledTrue(
+                        product.getId()
+                )
+                .orElseThrow(() ->
+                        new BusinessException(
+                                String.format(
+                                        "Không tìm thấy BOM cho sản phẩm %s. "
+                                                + "Vui lòng tạo BOM trước khi nhập kho.",
+                                        product.getName()
+                                )
+                        )
+                );
+
+        BigDecimal totalCost = bom.getItems()
+                .stream()
+                .map(bomItem ->
+                        bomItem.getConsumptionQuantity()
+                                .multiply(
+                                        bomItem.getMaterial().getUnitPrice()
+                                )
+                )
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return totalCost.setScale(
+                PRICE_SCALE,
+                RoundingMode.HALF_UP
+        );
     }
 
     private void validateDraft(

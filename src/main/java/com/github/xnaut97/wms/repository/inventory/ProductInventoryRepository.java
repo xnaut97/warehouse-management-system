@@ -101,4 +101,13 @@ public interface ProductInventoryRepository
             @Param("warehouseId") Long warehouseId,
             @Param("keyword") String keyword
     );
+
+    @Query("""
+            SELECT COALESCE(SUM(i.quantity), 0)
+            FROM ProductInventory i
+            WHERE i.product.id = :productId
+            """)
+    BigDecimal sumQuantityByProductId(
+            @Param("productId") Long productId
+    );
 }

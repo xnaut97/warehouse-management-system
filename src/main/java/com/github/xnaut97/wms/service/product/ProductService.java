@@ -6,10 +6,10 @@ import com.github.xnaut97.wms.dto.product.ProductResponse;
 import com.github.xnaut97.wms.dto.product.UpdateProductRequest;
 import com.github.xnaut97.wms.entity.product.Product;
 import com.github.xnaut97.wms.enums.AuditAction;
-import com.github.xnaut97.wms.enums.IssueStatus;
 import com.github.xnaut97.wms.exception.BusinessException;
-import com.github.xnaut97.wms.repository.product.ProductIssueItemRepository;
+import com.github.xnaut97.wms.repository.inventory.ProductInventoryRepository;
 import com.github.xnaut97.wms.repository.product.ProductRepository;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Set;
 
@@ -33,7 +34,7 @@ public class ProductService {
 
     private final ProductRepository repository;
 
-    private final ProductIssueItemRepository issueItemRepository;
+    private final ProductInventoryRepository inventoryRepository;
 
     @Audit(
             action = AuditAction.CREATE,
@@ -194,26 +195,62 @@ public class ProductService {
     }
 
     /**
-     * Giá trung bình của sản phẩm được tính từ các phiếu xuất đã xác nhận,
-     * theo bình quân gia quyền trên số lượng xuất.
+     * Cập nhật giá vốn trung bình (Moving Average Cost) khi nhập thêm thành phẩm.
+     *
+     * Công thức MAC:
+     * Giá vốn TB mới = (SL tồn cũ × Giá vốn cũ + SL nhập mới × Đơn giá nhập lô mới)
+     *                 / (SL tồn cũ + SL nhập mới)
+     *
+     * @param productId    ID sản phẩm
+     * @param newQuantity  Số lượng nhập mới (lô vừa nhập)
+     * @param newUnitPrice Đơn giá nhập của lô mới (đã tính từ BOM × giá vốn NVL)
      */
-    public void recalculateAveragePrice(Long productId) {
+    @Transactional
+    public void updateAverageCost(
+            Long productId,
+            BigDecimal newQuantity,
+            BigDecimal newUnitPrice
+    ) {
 
         Product product = findProductById(productId);
 
-        BigDecimal averagePrice =
-                issueItemRepository.calculateAveragePrice(
-                        productId,
-                        IssueStatus.CONFIRMED
-                );
+        // SL tồn hiện tại trong kho đã BAO GỒM lô vừa nhập
+        // → SL tồn cũ = tồn hiện tại – SL nhập mới
+        BigDecimal currentStock =
+                inventoryRepository.sumQuantityByProductId(productId);
+
+        BigDecimal oldStock =
+                currentStock.subtract(newQuantity);
+
+        BigDecimal oldCost = product.getAveragePrice();
+
+        BigDecimal newAverageCost;
+
+        if (oldStock.compareTo(BigDecimal.ZERO) <= 0) {
+            // Lần nhập đầu tiên hoặc tồn kho trống
+            // → Giá vốn TB = đơn giá nhập lô mới
+            newAverageCost = newUnitPrice;
+        } else {
+            // MAC chuẩn: (SL cũ × Giá cũ + SL mới × Giá mới) / (SL cũ + SL mới)
+            BigDecimal totalValue =
+                    oldStock.multiply(oldCost)
+                            .add(newQuantity.multiply(newUnitPrice));
+
+            BigDecimal totalQuantity =
+                    oldStock.add(newQuantity);
+
+            newAverageCost =
+                    totalValue.divide(
+                            totalQuantity,
+                            MathContext.DECIMAL128
+                    );
+        }
 
         product.setAveragePrice(
-                averagePrice == null
-                        ? BigDecimal.ZERO
-                        : averagePrice.setScale(
-                                PRICE_SCALE,
-                                RoundingMode.HALF_UP
-                        )
+                newAverageCost.setScale(
+                        PRICE_SCALE,
+                        RoundingMode.HALF_UP
+                )
         );
 
         repository.save(product);
