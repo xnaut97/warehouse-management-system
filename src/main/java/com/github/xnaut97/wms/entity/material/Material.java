@@ -25,10 +25,10 @@ public class Material extends BaseEntity {
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal unitPrice;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 18, scale = 0)
     private BigDecimal minimumStock = BigDecimal.ZERO;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 18, scale = 0)
     private BigDecimal maximumStock = BigDecimal.ZERO;
 
     @ManyToOne(fetch = FetchType.LAZY)

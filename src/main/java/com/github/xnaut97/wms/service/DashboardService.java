@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -37,6 +38,8 @@ import java.util.stream.IntStream;
 @Service
 @RequiredArgsConstructor
 public class DashboardService {
+
+    private static final int QUANTITY_SCALE = 0;
 
     private final WarehouseRepository warehouseRepository;
 
@@ -229,13 +232,13 @@ public class DashboardService {
     @Transactional
     public InventoryAnalysisResponse inventoryAnalysis() {
 
-        BigDecimal stockIn = getOrZero(
+        BigDecimal stockIn = scaledQuantity(
                 receiptItemRepository.getTotalQuantityByReceiptStatus(
                         ReceiptStatus.CONFIRMED
                 )
         );
 
-        BigDecimal stockOut = getOrZero(
+        BigDecimal stockOut = scaledQuantity(
                 issueItemRepository.getTotalQuantityByIssueStatus(
                         IssueStatus.CONFIRMED
                 )
@@ -260,7 +263,7 @@ public class DashboardService {
                 )
 
                 .stockBalance(
-                        stockIn.subtract(stockOut)
+                        scaledQuantity(stockIn.subtract(stockOut))
                 )
 
                 .inventoryValue(
@@ -549,11 +552,17 @@ public class DashboardService {
                                         : "ISSUE"
                         )
                         .itemCategory("Nguyên vật liệu")
-                        .quantity(t.getQuantity())
+                        .quantity(scaledQuantity(t.getQuantity()))
                         .status("COMPLETED")
                         .build()
                 )
                 .toList();
+
+    }
+
+    private BigDecimal scaledQuantity(BigDecimal value) {
+
+        return getOrZero(value).setScale(QUANTITY_SCALE, RoundingMode.HALF_UP);
 
     }
 
@@ -570,9 +579,7 @@ public class DashboardService {
         BigDecimal total =
                 materialInventoryRepository.getTotalQuantity();
 
-        return total == null
-                ? BigDecimal.ZERO
-                : total;
+        return scaledQuantity(total);
 
     }
 
@@ -601,7 +608,7 @@ public class DashboardService {
 
     private BigDecimal getProductInventoryQuantity() {
 
-        return getOrZero(
+        return scaledQuantity(
                 productInventoryRepository.getTotalQuantity()
         );
 

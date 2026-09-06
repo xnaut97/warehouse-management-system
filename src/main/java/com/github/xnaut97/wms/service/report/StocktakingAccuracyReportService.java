@@ -34,7 +34,9 @@ public class StocktakingAccuracyReportService {
 
     private static final int DEFAULT_PERIOD_MONTHS = 12;
 
-    private static final int SCALE = 2;
+    private static final int QUANTITY_SCALE = 0;
+
+    private static final int VALUE_SCALE = 2;
 
     private static final int MAX_REASONS = 10;
 
@@ -143,8 +145,8 @@ public class StocktakingAccuracyReportService {
             return StocktakingAccuracyResponse.builder()
                     .available(false)
                     .unavailableReason("NO_COMPLETED_STOCKTAKING")
-                    .totalSystemQuantity(scaled(systemQuantity))
-                    .totalPhysicalQuantity(scaled(physicalQuantity))
+                    .totalSystemQuantity(scaledQuantity(systemQuantity))
+                    .totalPhysicalQuantity(scaledQuantity(physicalQuantity))
                     .totalItems(totalItems)
                     .discrepancyItems(discrepancyItems)
                     .completedStocktakings(completedStocktakings)
@@ -159,12 +161,12 @@ public class StocktakingAccuracyReportService {
                                 .multiply(BigDecimal.valueOf(100))
                                 .divide(
                                         BigDecimal.valueOf(totalItems),
-                                        SCALE,
+                                        VALUE_SCALE,
                                         RoundingMode.HALF_UP
                                 )
                 )
-                .totalSystemQuantity(scaled(systemQuantity))
-                .totalPhysicalQuantity(scaled(physicalQuantity))
+                .totalSystemQuantity(scaledQuantity(systemQuantity))
+                .totalPhysicalQuantity(scaledQuantity(physicalQuantity))
                 .totalItems(totalItems)
                 .discrepancyItems(discrepancyItems)
                 .completedStocktakings(completedStocktakings)
@@ -187,11 +189,11 @@ public class StocktakingAccuracyReportService {
         }
 
         return StocktakingVarianceValueResponse.builder()
-                .netVarianceValue(scaled(totals.getNetVarianceValue()))
-                .absoluteVarianceValue(scaled(totals.getAbsoluteVarianceValue()))
-                .netVarianceQuantity(scaled(totals.getNetVarianceQuantity()))
+                .netVarianceValue(scaledValue(totals.getNetVarianceValue()))
+                .absoluteVarianceValue(scaledValue(totals.getAbsoluteVarianceValue()))
+                .netVarianceQuantity(scaledQuantity(totals.getNetVarianceQuantity()))
                 .absoluteVarianceQuantity(
-                        scaled(totals.getAbsoluteVarianceQuantity())
+                        scaledQuantity(totals.getAbsoluteVarianceQuantity())
                 )
                 .build();
 
@@ -229,16 +231,16 @@ public class StocktakingAccuracyReportService {
                                         : row.getItemCount()
                         )
                         .netVarianceQuantity(
-                                scaled(row.getNetVarianceQuantity())
+                                scaledQuantity(row.getNetVarianceQuantity())
                         )
                         .absoluteVarianceQuantity(
-                                scaled(row.getAbsoluteVarianceQuantity())
+                                scaledQuantity(row.getAbsoluteVarianceQuantity())
                         )
                         .netVarianceValue(
-                                scaled(row.getNetVarianceValue())
+                                scaledValue(row.getNetVarianceValue())
                         )
                         .absoluteVarianceValue(
-                                scaled(row.getAbsoluteVarianceValue())
+                                scaledValue(row.getAbsoluteVarianceValue())
                         )
                         .sharePercent(
                                 percentage(
@@ -329,8 +331,8 @@ public class StocktakingAccuracyReportService {
                     .reason(reason)
                     .unspecified(reason == null)
                     .itemCount(itemCount)
-                    .absoluteVarianceQuantity(scaled(quantity))
-                    .absoluteVarianceValue(scaled(value))
+                    .absoluteVarianceQuantity(scaledQuantity(quantity))
+                    .absoluteVarianceValue(scaledValue(value))
                     .build());
 
         });
@@ -365,13 +367,25 @@ public class StocktakingAccuracyReportService {
 
         return value
                 .multiply(BigDecimal.valueOf(100))
-                .divide(total, SCALE, RoundingMode.HALF_UP);
+                .divide(total, VALUE_SCALE, RoundingMode.HALF_UP);
+
+    }
+
+    private BigDecimal scaledQuantity(BigDecimal value) {
+
+        return orZero(value).setScale(QUANTITY_SCALE, RoundingMode.HALF_UP);
+
+    }
+
+    private BigDecimal scaledValue(BigDecimal value) {
+
+        return orZero(value).setScale(VALUE_SCALE, RoundingMode.HALF_UP);
 
     }
 
     private BigDecimal scaled(BigDecimal value) {
 
-        return orZero(value).setScale(SCALE, RoundingMode.HALF_UP);
+        return scaledValue(value);
 
     }
 

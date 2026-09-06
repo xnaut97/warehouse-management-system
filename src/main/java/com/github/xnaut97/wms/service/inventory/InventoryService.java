@@ -49,6 +49,8 @@ public class InventoryService {
     private static final Comparator<String> TEXT =
             Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER);
 
+    private static final int QUANTITY_SCALE = 0;
+
     private static final int VALUE_SCALE = 2;
 
     private final MaterialInventoryRepository repository;
@@ -239,13 +241,13 @@ public class InventoryService {
                     : orZero(material.getMaximumStock());
 
             rows.add(baseRow(row)
-                    .averagePrice(scaled(averagePrice))
+                    .averagePrice(scaledValue(averagePrice))
                     .inventoryValue(
-                            scaled(orZero(row.getClosingQuantity())
+                            scaledValue(orZero(row.getClosingQuantity())
                                     .multiply(averagePrice))
                     )
-                    .minimumStock(minimumStock)
-                    .maximumStock(maximumStock)
+                    .minimumStock(scaledQuantity(minimumStock))
+                    .maximumStock(scaledQuantity(maximumStock))
                     .thresholdStatus(
                             thresholdStatus(
                                     orZero(row.getClosingQuantity()),
@@ -304,20 +306,20 @@ public class InventoryService {
                     lots.getOrDefault(row.getItemId(), List.of());
 
             rows.add(baseRow(row)
-                    .averagePrice(scaled(averagePrice))
+                    .averagePrice(scaledValue(averagePrice))
                     .inventoryValue(
-                            scaled(orZero(row.getClosingQuantity())
+                            scaledValue(orZero(row.getClosingQuantity())
                                     .multiply(averagePrice))
                     )
                     .minimumStock(
                             product == null
                                     ? BigDecimal.ZERO
-                                    : orZero(product.getMinimumStock())
+                                    : scaledQuantity(product.getMinimumStock())
                     )
                     .maximumStock(
                             product == null
                                     ? BigDecimal.ZERO
-                                    : orZero(product.getMaximumStock())
+                                    : scaledQuantity(product.getMaximumStock())
                     )
                     .expiryStatus(primaryLotStatus(productLots))
                     .lots(productLots)
@@ -372,7 +374,7 @@ public class InventoryService {
                 .lotNumber(lot.getLotNumber())
                 .expirationDate(lot.getExpirationDate())
                 .daysToExpiry(daysToExpiry)
-                .quantity(lot.getQuantity())
+                .quantity(scaledQuantity(lot.getQuantity()))
                 .status(expiryStatus(daysToExpiry))
                 .build();
 
@@ -470,7 +472,7 @@ public class InventoryService {
             String unit
     ) {
 
-        BigDecimal zero = scaled(BigDecimal.ZERO);
+        BigDecimal zero = scaledQuantity(BigDecimal.ZERO);
 
         return StockSummaryRowResponse.builder()
                 .itemId(itemId)
@@ -496,9 +498,21 @@ public class InventoryService {
 
     }
 
-    private BigDecimal scaled(BigDecimal value) {
+    private BigDecimal scaledQuantity(BigDecimal value) {
+
+        return orZero(value).setScale(QUANTITY_SCALE, RoundingMode.HALF_UP);
+
+    }
+
+    private BigDecimal scaledValue(BigDecimal value) {
 
         return orZero(value).setScale(VALUE_SCALE, RoundingMode.HALF_UP);
+
+    }
+
+    private BigDecimal scaled(BigDecimal value) {
+
+        return scaledValue(value);
 
     }
 
@@ -550,7 +564,7 @@ public class InventoryService {
                             .code(lot.getProduct().getCode())
                             .name(lot.getProduct().getName())
                             .unit(lot.getProduct().getUnit())
-                            .quantity(quantity)
+                            .quantity(scaledQuantity(quantity))
                             .build()
             );
 
@@ -679,7 +693,6 @@ public class InventoryService {
     ) {
 
         return InventoryResponse.builder()
-                .id(materialInventory.getId())
                 .itemGroup(StockGroup.MATERIAL)
                 .warehouseId(materialInventory.getWarehouse().getId())
                 .warehouse(materialInventory.getWarehouse().getName())
@@ -687,7 +700,7 @@ public class InventoryService {
                 .code(materialInventory.getMaterial().getCode())
                 .name(materialInventory.getMaterial().getName())
                 .unit(materialInventory.getMaterial().getUnit())
-                .quantity(materialInventory.getQuantity())
+                .quantity(scaledQuantity(materialInventory.getQuantity()))
                 .build();
 
     }
@@ -703,7 +716,7 @@ public class InventoryService {
                 .materialId(materialInventory.getMaterial().getId())
                 .materialCode(materialInventory.getMaterial().getCode())
                 .materialName(materialInventory.getMaterial().getName())
-                .quantity(materialInventory.getQuantity())
+                .quantity(scaledQuantity(materialInventory.getQuantity()))
                 .build();
 
     }
@@ -756,11 +769,11 @@ public class InventoryService {
                 )
 
                 .currentStock(
-                        materialInventory.getQuantity()
+                        scaledQuantity(materialInventory.getQuantity())
                 )
 
                 .minimumStock(
-                        materialInventory.getMaterial().getMinimumStock()
+                        scaledQuantity(materialInventory.getMaterial().getMinimumStock())
                 )
 
                 .unit(

@@ -35,7 +35,7 @@ public class ProductInventory extends BaseEntity {
     @JoinColumn(nullable = false)
     private Product product;
 
-    @Column(nullable = false, precision = 18, scale = 2)
+    @Column(nullable = false, precision = 18, scale = 0)
     private BigDecimal quantity = BigDecimal.ZERO;
 
     private String lotNumber;

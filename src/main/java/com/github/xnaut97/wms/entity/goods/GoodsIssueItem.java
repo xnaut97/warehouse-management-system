@@ -22,7 +22,7 @@ public class GoodsIssueItem extends BaseEntity {
     @JoinColumn(nullable = false)
     private Material material;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 18, scale = 0)
     private BigDecimal quantity;
 
     @Column

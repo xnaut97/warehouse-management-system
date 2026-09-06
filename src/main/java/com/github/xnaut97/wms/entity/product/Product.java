@@ -31,10 +31,10 @@ public class Product extends BaseEntity {
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal averagePrice = BigDecimal.ZERO;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 18, scale = 0)
     private BigDecimal minimumStock = BigDecimal.ZERO;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 18, scale = 0)
     private BigDecimal maximumStock = BigDecimal.ZERO;
 
     @Column(nullable = false)

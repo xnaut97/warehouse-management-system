@@ -27,13 +27,13 @@ public class StocktakingItemBatch extends BaseEntity {
 
     private LocalDate expirationDate;
 
-    @Column(nullable = false, precision = 18, scale = 2)
+    @Column(nullable = false, precision = 18, scale = 0)
     private BigDecimal systemQuantity;
 
-    @Column(precision = 18, scale = 2)
+    @Column(precision = 18, scale = 0)
     private BigDecimal physicalQuantity;
 
-    @Column(nullable = false, precision = 18, scale = 2)
+    @Column(nullable = false, precision = 18, scale = 0)
     private BigDecimal varianceQuantity;
 
     @Column(length = 500)

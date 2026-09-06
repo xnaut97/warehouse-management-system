@@ -33,7 +33,7 @@ public class MaterialInventory extends BaseEntity {
     @JoinColumn(nullable = false)
     private Material material;
 
-    @Column(nullable = false, precision = 18, scale = 2)
+    @Column(nullable = false, precision = 18, scale = 0)
     private BigDecimal quantity = BigDecimal.ZERO;
 
 }

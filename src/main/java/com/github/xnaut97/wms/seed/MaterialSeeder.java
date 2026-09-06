@@ -87,7 +87,7 @@ public class MaterialSeeder {
                     SupplierSeeder.CEMENT_CODE,
                     BigDecimal.valueOf(5000),
                     BigDecimal.valueOf(35000),
-                    BigDecimal.valueOf(0.5),
+                    BigDecimal.ONE,
                     CEMENT_RECEIPT_MINIMUM,
                     CEMENT_RECEIPT_MAXIMUM,
                     0

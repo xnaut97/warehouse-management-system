@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class StockCardService {
+
+    private static final int QUANTITY_SCALE = 0;
 
     private final InventoryTransactionRepository transactionRepository;
 
@@ -81,11 +84,11 @@ public class StockCardService {
 
                             .transactionType(transaction.getType().name())
 
-                            .quantityIn(in)
+                            .quantityIn(scaledQuantity(in))
 
-                            .quantityOut(out)
+                            .quantityOut(scaledQuantity(out))
 
-                            .balance(balance)
+                            .balance(scaledQuantity(balance))
 
                             .build()
 
@@ -120,6 +123,13 @@ public class StockCardService {
                 .transactions(items)
 
                 .build();
+
+    }
+
+    private BigDecimal scaledQuantity(BigDecimal value) {
+
+        return (value == null ? BigDecimal.ZERO : value)
+                .setScale(QUANTITY_SCALE, RoundingMode.HALF_UP);
 
     }
 

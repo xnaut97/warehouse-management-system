@@ -45,7 +45,9 @@ public class OperationReportService {
 
     private static final int DEFAULT_PERIOD_MONTHS = 12;
 
-    private static final int SCALE = 2;
+    private static final int QUANTITY_SCALE = 0;
+
+    private static final int VALUE_SCALE = 2;
 
     private final OperationReportRepository repository;
 
@@ -275,10 +277,10 @@ public class OperationReportService {
                     .code(entry.getValue().getCode())
                     .name(entry.getValue().getName())
                     .unit(entry.getValue().getUnit())
-                    .openingQuantity(scaled(openingQuantity))
-                    .receiptQuantity(scaled(receiptQuantity))
-                    .issueQuantity(scaled(issueQuantity))
-                    .closingQuantity(scaled(closingQuantity))
+                    .openingQuantity(scaledQuantity(openingQuantity))
+                    .receiptQuantity(scaledQuantity(receiptQuantity))
+                    .issueQuantity(scaledQuantity(issueQuantity))
+                    .closingQuantity(scaledQuantity(closingQuantity))
                     .documents(
                             documents.getOrDefault(itemId, List.of())
                     )
@@ -298,10 +300,10 @@ public class OperationReportService {
                 .warehouseId(warehouseId)
                 .warehouseCode(warehouse.getCode())
                 .warehouseName(warehouse.getName())
-                .totalOpeningQuantity(scaled(totalOpening))
-                .totalReceiptQuantity(scaled(totalReceipt))
-                .totalIssueQuantity(scaled(totalIssue))
-                .totalClosingQuantity(scaled(totalClosing))
+                .totalOpeningQuantity(scaledQuantity(totalOpening))
+                .totalReceiptQuantity(scaledQuantity(totalReceipt))
+                .totalIssueQuantity(scaledQuantity(totalIssue))
+                .totalClosingQuantity(scaledQuantity(totalClosing))
                 .items(rows)
                 .build();
 
@@ -457,10 +459,10 @@ public class OperationReportService {
                     .materialCode(material.getMaterialCode())
                     .materialName(material.getMaterialName())
                     .unit(material.getUnit())
-                    .actualQuantity(scaled(actualQuantity))
-                    .standardQuantity(scaled(standardQuantity))
+                    .actualQuantity(scaledQuantity(actualQuantity))
+                    .standardQuantity(scaledQuantity(standardQuantity))
                     .varianceQuantity(
-                            scaled(actualQuantity.subtract(standardQuantity))
+                            scaledQuantity(actualQuantity.subtract(standardQuantity))
                     )
                     .wasteRatePercent(
                             wasteRate(actualQuantity, standardQuantity)
@@ -519,9 +521,9 @@ public class OperationReportService {
             return MaterialWasteRateResponse.builder()
                     .available(false)
                     .unavailableReason("NO_BOM_STANDARD_IN_PERIOD")
-                    .totalActualQuantity(scaled(totalActualQuantity))
+                    .totalActualQuantity(scaledQuantity(totalActualQuantity))
                     .totalStandardQuantity(BigDecimal.ZERO)
-                    .totalActualValue(scaled(totalActualValue))
+                    .totalActualValue(scaledValue(totalActualValue))
                     .totalStandardValue(BigDecimal.ZERO)
                     .comparedMaterials(standard.size())
                     .build();
@@ -536,10 +538,10 @@ public class OperationReportService {
                 .wasteRateByValuePercent(
                         wasteRate(totalActualValue, totalStandardValue)
                 )
-                .totalActualQuantity(scaled(totalActualQuantity))
-                .totalStandardQuantity(scaled(totalStandardQuantity))
-                .totalActualValue(scaled(totalActualValue))
-                .totalStandardValue(scaled(totalStandardValue))
+                .totalActualQuantity(scaledQuantity(totalActualQuantity))
+                .totalStandardQuantity(scaledQuantity(totalStandardQuantity))
+                .totalActualValue(scaledValue(totalActualValue))
+                .totalStandardValue(scaledValue(totalStandardValue))
                 .comparedMaterials(standard.size())
                 .build();
 
@@ -818,13 +820,25 @@ public class OperationReportService {
 
         return actual.subtract(standard)
                 .multiply(BigDecimal.valueOf(100))
-                .divide(standard, SCALE, RoundingMode.HALF_UP);
+                .divide(standard, VALUE_SCALE, RoundingMode.HALF_UP);
+
+    }
+
+    private BigDecimal scaledQuantity(BigDecimal value) {
+
+        return orZero(value).setScale(QUANTITY_SCALE, RoundingMode.HALF_UP);
+
+    }
+
+    private BigDecimal scaledValue(BigDecimal value) {
+
+        return orZero(value).setScale(VALUE_SCALE, RoundingMode.HALF_UP);
 
     }
 
     private BigDecimal scaled(BigDecimal value) {
 
-        return orZero(value).setScale(SCALE, RoundingMode.HALF_UP);
+        return scaledValue(value);
 
     }
 

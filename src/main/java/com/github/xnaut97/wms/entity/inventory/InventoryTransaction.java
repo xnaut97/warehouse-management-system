@@ -29,7 +29,7 @@ public class InventoryTransaction extends BaseEntity {
     @Column(nullable = false)
     private InventoryTransactionType type;
 
-    @Column(nullable = false, precision = 18, scale = 2)
+    @Column(nullable = false, precision = 18, scale = 0)
     private BigDecimal quantity;
 
     @Column(nullable = false)

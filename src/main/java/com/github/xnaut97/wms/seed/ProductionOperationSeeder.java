@@ -1004,15 +1004,11 @@ public class ProductionOperationSeeder {
             String unit
     ) {
 
-        if (!MaterialSeeder.PIECE_UNIT.equals(unit)) {
-            return quantity.setScale(2, RoundingMode.DOWN);
-        }
+        BigDecimal whole = quantity.setScale(0, RoundingMode.FLOOR);
 
-        BigDecimal pieces = quantity.setScale(0, RoundingMode.FLOOR);
-
-        return pieces.compareTo(base) < 0
+        return whole.compareTo(base) < 0
                 ? base.setScale(0, RoundingMode.CEILING)
-                : pieces;
+                : whole;
 
     }
 
@@ -1912,8 +1908,8 @@ public class ProductionOperationSeeder {
 
         BigDecimal delta = systemQuantity
                 .multiply(BigDecimal.valueOf(ratio))
-                .setScale(2, RoundingMode.HALF_UP)
-                .max(BigDecimal.valueOf(0.01));
+                .setScale(0, RoundingMode.HALF_UP)
+                .max(BigDecimal.ONE);
 
         BigDecimal physical = random.nextBoolean()
                 ? systemQuantity.subtract(delta)

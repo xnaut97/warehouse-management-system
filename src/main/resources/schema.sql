@@ -232,3 +232,114 @@ SET @stmt := IF(@bom_finished_product_fk IS NOT NULL, CONCAT('ALTER TABLE boms D
 PREPARE bom_finished_product_fk_drop FROM @stmt;
 EXECUTE bom_finished_product_fk_drop;
 DEALLOCATE PREPARE bom_finished_product_fk_drop;
+
+-- Migrate warehouse inventory and movements quantity columns to integer (BIGINT)
+SET @inv_table_exists := (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventories');
+SET @stmt := IF(@inv_table_exists > 0, 'UPDATE inventories SET quantity = ROUND(quantity, 0)', 'SELECT 1');
+PREPARE inv_round FROM @stmt;
+EXECUTE inv_round;
+DEALLOCATE PREPARE inv_round;
+SET @stmt := IF(@inv_table_exists > 0, 'ALTER TABLE inventories MODIFY COLUMN quantity BIGINT NOT NULL DEFAULT 0', 'SELECT 1');
+PREPARE inv_widen FROM @stmt;
+EXECUTE inv_widen;
+DEALLOCATE PREPARE inv_widen;
+
+SET @pinv_table_exists := (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'product_inventories');
+SET @stmt := IF(@pinv_table_exists > 0, 'UPDATE product_inventories SET quantity = ROUND(quantity, 0)', 'SELECT 1');
+PREPARE pinv_round FROM @stmt;
+EXECUTE pinv_round;
+DEALLOCATE PREPARE pinv_round;
+SET @stmt := IF(@pinv_table_exists > 0, 'ALTER TABLE product_inventories MODIFY COLUMN quantity BIGINT NOT NULL DEFAULT 0', 'SELECT 1');
+PREPARE pinv_widen FROM @stmt;
+EXECUTE pinv_widen;
+DEALLOCATE PREPARE pinv_widen;
+
+SET @it_table_exists := (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inventory_transactions');
+SET @stmt := IF(@it_table_exists > 0, 'UPDATE inventory_transactions SET quantity = ROUND(quantity, 0)', 'SELECT 1');
+PREPARE it_round FROM @stmt;
+EXECUTE it_round;
+DEALLOCATE PREPARE it_round;
+SET @stmt := IF(@it_table_exists > 0, 'ALTER TABLE inventory_transactions MODIFY COLUMN quantity BIGINT NOT NULL', 'SELECT 1');
+PREPARE it_widen FROM @stmt;
+EXECUTE it_widen;
+DEALLOCATE PREPARE it_widen;
+
+SET @gri_table_exists := (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'goods_receipt_items');
+SET @stmt := IF(@gri_table_exists > 0, 'UPDATE goods_receipt_items SET quantity = ROUND(quantity, 0)', 'SELECT 1');
+PREPARE gri_round FROM @stmt;
+EXECUTE gri_round;
+DEALLOCATE PREPARE gri_round;
+SET @stmt := IF(@gri_table_exists > 0, 'ALTER TABLE goods_receipt_items MODIFY COLUMN quantity BIGINT NOT NULL', 'SELECT 1');
+PREPARE gri_widen FROM @stmt;
+EXECUTE gri_widen;
+DEALLOCATE PREPARE gri_widen;
+
+SET @gii_table_exists := (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'goods_issue_items');
+SET @stmt := IF(@gii_table_exists > 0, 'UPDATE goods_issue_items SET quantity = ROUND(quantity, 0)', 'SELECT 1');
+PREPARE gii_round FROM @stmt;
+EXECUTE gii_round;
+DEALLOCATE PREPARE gii_round;
+SET @stmt := IF(@gii_table_exists > 0, 'ALTER TABLE goods_issue_items MODIFY COLUMN quantity BIGINT NOT NULL', 'SELECT 1');
+PREPARE gii_widen FROM @stmt;
+EXECUTE gii_widen;
+DEALLOCATE PREPARE gii_widen;
+
+SET @pri_table_exists := (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'product_receipt_items');
+SET @stmt := IF(@pri_table_exists > 0, 'UPDATE product_receipt_items SET quantity = ROUND(quantity, 0)', 'SELECT 1');
+PREPARE pri_round FROM @stmt;
+EXECUTE pri_round;
+DEALLOCATE PREPARE pri_round;
+SET @stmt := IF(@pri_table_exists > 0, 'ALTER TABLE product_receipt_items MODIFY COLUMN quantity BIGINT NOT NULL', 'SELECT 1');
+PREPARE pri_widen FROM @stmt;
+EXECUTE pri_widen;
+DEALLOCATE PREPARE pri_widen;
+
+SET @pii_table_exists := (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'product_issue_items');
+SET @stmt := IF(@pii_table_exists > 0, 'UPDATE product_issue_items SET quantity = ROUND(quantity, 0)', 'SELECT 1');
+PREPARE pii_round FROM @stmt;
+EXECUTE pii_round;
+DEALLOCATE PREPARE pii_round;
+SET @stmt := IF(@pii_table_exists > 0, 'ALTER TABLE product_issue_items MODIFY COLUMN quantity BIGINT NOT NULL', 'SELECT 1');
+PREPARE pii_widen FROM @stmt;
+EXECUTE pii_widen;
+DEALLOCATE PREPARE pii_widen;
+
+SET @sti_table_exists := (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'stocktaking_item');
+SET @stmt := IF(@sti_table_exists > 0, 'UPDATE stocktaking_item SET system_quantity = ROUND(system_quantity, 0), physical_quantity = ROUND(physical_quantity, 0), variance_quantity = ROUND(variance_quantity, 0)', 'SELECT 1');
+PREPARE sti_round FROM @stmt;
+EXECUTE sti_round;
+DEALLOCATE PREPARE sti_round;
+SET @stmt := IF(@sti_table_exists > 0, 'ALTER TABLE stocktaking_item MODIFY COLUMN system_quantity BIGINT NOT NULL, MODIFY COLUMN physical_quantity BIGINT NULL, MODIFY COLUMN variance_quantity BIGINT NOT NULL', 'SELECT 1');
+PREPARE sti_widen FROM @stmt;
+EXECUTE sti_widen;
+DEALLOCATE PREPARE sti_widen;
+
+SET @stib_table_exists := (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'stocktaking_item_batches');
+SET @stmt := IF(@stib_table_exists > 0, 'UPDATE stocktaking_item_batches SET system_quantity = ROUND(system_quantity, 0), physical_quantity = ROUND(physical_quantity, 0), variance_quantity = ROUND(variance_quantity, 0)', 'SELECT 1');
+PREPARE stib_round FROM @stmt;
+EXECUTE stib_round;
+DEALLOCATE PREPARE stib_round;
+SET @stmt := IF(@stib_table_exists > 0, 'ALTER TABLE stocktaking_item_batches MODIFY COLUMN system_quantity BIGINT NOT NULL, MODIFY COLUMN physical_quantity BIGINT NULL, MODIFY COLUMN variance_quantity BIGINT NOT NULL', 'SELECT 1');
+PREPARE stib_widen FROM @stmt;
+EXECUTE stib_widen;
+DEALLOCATE PREPARE stib_widen;
+
+SET @materials_table_exists := (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'materials');
+SET @stmt := IF(@materials_table_exists > 0, 'UPDATE materials SET minimum_stock = ROUND(minimum_stock, 0), maximum_stock = ROUND(maximum_stock, 0)', 'SELECT 1');
+PREPARE materials_round FROM @stmt;
+EXECUTE materials_round;
+DEALLOCATE PREPARE materials_round;
+SET @stmt := IF(@materials_table_exists > 0, 'ALTER TABLE materials MODIFY COLUMN minimum_stock BIGINT NOT NULL DEFAULT 0, MODIFY COLUMN maximum_stock BIGINT NOT NULL DEFAULT 0', 'SELECT 1');
+PREPARE materials_widen FROM @stmt;
+EXECUTE materials_widen;
+DEALLOCATE PREPARE materials_widen;
+
+SET @products_table_exists := (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products');
+SET @stmt := IF(@products_table_exists > 0, 'UPDATE products SET minimum_stock = ROUND(minimum_stock, 0), maximum_stock = ROUND(maximum_stock, 0)', 'SELECT 1');
+PREPARE products_round FROM @stmt;
+EXECUTE products_round;
+DEALLOCATE PREPARE products_round;
+SET @stmt := IF(@products_table_exists > 0, 'ALTER TABLE products MODIFY COLUMN minimum_stock BIGINT NOT NULL DEFAULT 0, MODIFY COLUMN maximum_stock BIGINT NOT NULL DEFAULT 0', 'SELECT 1');
+PREPARE products_widen FROM @stmt;
+EXECUTE products_widen;
+DEALLOCATE PREPARE products_widen;

@@ -31,13 +31,13 @@ public class StocktakingItem extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private StockGroup itemGroup;
 
-    @Column(nullable = false, precision = 18, scale = 2)
+    @Column(nullable = false, precision = 18, scale = 0)
     private BigDecimal systemQuantity;
 
-    @Column(precision = 18, scale = 2)
+    @Column(precision = 18, scale = 0)
     private BigDecimal physicalQuantity;
 
-    @Column(nullable = false, precision = 18, scale = 2)
+    @Column(nullable = false, precision = 18, scale = 0)
     private BigDecimal varianceQuantity;
 
     @Enumerated(EnumType.STRING)
