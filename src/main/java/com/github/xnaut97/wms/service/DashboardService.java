@@ -30,6 +30,17 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import com.github.xnaut97.wms.entity.goods.GoodsIssue;
+import com.github.xnaut97.wms.entity.goods.GoodsIssueItem;
+import com.github.xnaut97.wms.entity.goods.GoodsReceipt;
+import com.github.xnaut97.wms.entity.goods.GoodsReceiptItem;
+import com.github.xnaut97.wms.entity.inventory.InventoryTransaction;
+import com.github.xnaut97.wms.entity.product.ProductIssue;
+import com.github.xnaut97.wms.entity.product.ProductIssueItem;
+import com.github.xnaut97.wms.entity.product.ProductReceipt;
+import com.github.xnaut97.wms.entity.product.ProductReceiptItem;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +49,7 @@ import java.util.stream.IntStream;
 @Service
 @RequiredArgsConstructor
 public class DashboardService {
+
 
     private static final int QUANTITY_SCALE = 0;
 
@@ -538,27 +550,158 @@ public class DashboardService {
         java.time.format.DateTimeFormatter formatter =
                 java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-        return transactionRepository
-                .findRecentTransactions(PageRequest.of(0, 10))
-                .stream()
-                .map(t -> RecentTransactionResponse.builder()
-                        .id(t.getId())
-                        .time(t.getCreatedAt().format(formatter))
-                        .voucherNo(t.getReferenceNo())
-                        .itemCode(t.getMaterial().getCode())
-                        .transactionType(
-                                t.getType() == InventoryTransactionType.IN
-                                        ? "RECEIPT"
-                                        : "ISSUE"
-                        )
-                        .itemCategory("Nguyên vật liệu")
-                        .quantity(scaledQuantity(t.getQuantity()))
-                        .status("COMPLETED")
-                        .build()
-                )
+        List<RecentCandidate> candidates = new ArrayList<>();
+
+        // 1. Goods Issues (Xuất kho NVL)
+        List<GoodsIssue> goodsIssues = issueRepository.findTop10ByOrderByCreatedAtDesc();
+        for (GoodsIssue gi : goodsIssues) {
+            List<GoodsIssueItem> items = issueItemRepository.findByIssueId(gi.getId());
+            String itemCode = items.isEmpty() ? "N/A" : items.get(0).getMaterial().getCode();
+            BigDecimal totalQty = items.stream()
+                    .map(i -> getOrZero(i.getQuantity()))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            candidates.add(new RecentCandidate(
+                    gi.getCreatedAt(),
+                    gi.getIssueNo(),
+                    RecentTransactionResponse.builder()
+                            .id(gi.getId())
+                            .time(gi.getCreatedAt() != null ? gi.getCreatedAt().format(formatter) : "")
+                            .voucherNo(gi.getIssueNo())
+                            .itemCode(itemCode)
+                            .transactionType("ISSUE")
+                            .itemCategory("Nguyên vật liệu")
+                            .quantity(scaledQuantity(totalQty))
+                            .status(gi.getStatus() != null ? gi.getStatus().name() : "PENDING")
+                            .build()
+            ));
+        }
+
+        // 2. Goods Receipts (Nhập kho NVL)
+        List<GoodsReceipt> goodsReceipts = receiptRepository.findTop10ByOrderByCreatedAtDesc();
+        for (GoodsReceipt gr : goodsReceipts) {
+            List<GoodsReceiptItem> items = gr.getItems() != null ? gr.getItems() : List.of();
+            String itemCode = items.isEmpty() ? "N/A" : items.get(0).getMaterial().getCode();
+            BigDecimal totalQty = items.stream()
+                    .map(i -> getOrZero(i.getQuantity()))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            candidates.add(new RecentCandidate(
+                    gr.getCreatedAt(),
+                    gr.getReceiptNo(),
+                    RecentTransactionResponse.builder()
+                            .id(gr.getId())
+                            .time(gr.getCreatedAt() != null ? gr.getCreatedAt().format(formatter) : "")
+                            .voucherNo(gr.getReceiptNo())
+                            .itemCode(itemCode)
+                            .transactionType("RECEIPT")
+                            .itemCategory("Nguyên vật liệu")
+                            .quantity(scaledQuantity(totalQty))
+                            .status(gr.getStatus() != null ? gr.getStatus().name() : "DRAFT")
+                            .build()
+            ));
+        }
+
+        // 3. Product Issues (Xuất kho Thành phẩm)
+        List<ProductIssue> productIssues = productIssueRepository.findTop10ByOrderByCreatedAtDesc();
+        for (ProductIssue pi : productIssues) {
+            List<ProductIssueItem> items = pi.getItems() != null ? pi.getItems() : List.of();
+            String itemCode = items.isEmpty() ? "N/A" : items.get(0).getProduct().getCode();
+            BigDecimal totalQty = items.stream()
+                    .map(i -> getOrZero(i.getQuantity()))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            candidates.add(new RecentCandidate(
+                    pi.getCreatedAt(),
+                    pi.getIssueNo(),
+                    RecentTransactionResponse.builder()
+                            .id(pi.getId())
+                            .time(pi.getCreatedAt() != null ? pi.getCreatedAt().format(formatter) : "")
+                            .voucherNo(pi.getIssueNo())
+                            .itemCode(itemCode)
+                            .transactionType("ISSUE")
+                            .itemCategory("Thành phẩm")
+                            .quantity(scaledQuantity(totalQty))
+                            .status(pi.getStatus() != null ? pi.getStatus().name() : "PENDING")
+                            .build()
+            ));
+        }
+
+        // 4. Product Receipts (Nhập kho Thành phẩm)
+        List<ProductReceipt> productReceipts = productReceiptRepository.findTop10ByOrderByCreatedAtDesc();
+        for (ProductReceipt pr : productReceipts) {
+            List<ProductReceiptItem> items = pr.getItems() != null ? pr.getItems() : List.of();
+            String itemCode = items.isEmpty() ? "N/A" : items.get(0).getProduct().getCode();
+            BigDecimal totalQty = items.stream()
+                    .map(i -> getOrZero(i.getQuantity()))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            candidates.add(new RecentCandidate(
+                    pr.getCreatedAt(),
+                    pr.getReceiptNo(),
+                    RecentTransactionResponse.builder()
+                            .id(pr.getId())
+                            .time(pr.getCreatedAt() != null ? pr.getCreatedAt().format(formatter) : "")
+                            .voucherNo(pr.getReceiptNo())
+                            .itemCode(itemCode)
+                            .transactionType("RECEIPT")
+                            .itemCategory("Thành phẩm")
+                            .quantity(scaledQuantity(totalQty))
+                            .status(pr.getStatus() != null ? pr.getStatus().name() : "DRAFT")
+                            .build()
+            ));
+        }
+
+        // 5. Inventory Transactions (Stock card / adjustments)
+        List<InventoryTransaction> transactions = transactionRepository.findRecentTransactions(PageRequest.of(0, 10));
+        for (InventoryTransaction t : transactions) {
+            candidates.add(new RecentCandidate(
+                    t.getCreatedAt(),
+                    t.getReferenceNo(),
+                    RecentTransactionResponse.builder()
+                            .id(t.getId())
+                            .time(t.getCreatedAt() != null ? t.getCreatedAt().format(formatter) : "")
+                            .voucherNo(t.getReferenceNo())
+                            .itemCode(t.getMaterial() != null ? t.getMaterial().getCode() : "N/A")
+                            .transactionType(t.getType() == InventoryTransactionType.IN ? "RECEIPT" : "ISSUE")
+                            .itemCategory("Nguyên vật liệu")
+                            .quantity(scaledQuantity(t.getQuantity()))
+                            .status("COMPLETED")
+                            .build()
+            ));
+        }
+
+        // Deduplicate by voucherNo, prioritizing document records over raw transaction rows
+        Map<String, RecentCandidate> uniqueMap = new LinkedHashMap<>();
+        for (RecentCandidate c : candidates) {
+            if (c.voucherNo() != null && !c.voucherNo().isEmpty()) {
+                if (!uniqueMap.containsKey(c.voucherNo())) {
+                    uniqueMap.put(c.voucherNo(), c);
+                } else {
+                    RecentCandidate existing = uniqueMap.get(c.voucherNo());
+                    if ("COMPLETED".equals(existing.response().getStatus()) && !"COMPLETED".equals(c.response().getStatus())) {
+                        uniqueMap.put(c.voucherNo(), c);
+                    }
+                }
+            } else {
+                uniqueMap.put(java.util.UUID.randomUUID().toString(), c);
+            }
+        }
+
+        return uniqueMap.values().stream()
+                .filter(c -> c.createdAt() != null)
+                .sorted((a, b) -> b.createdAt().compareTo(a.createdAt()))
+                .limit(10)
+                .map(RecentCandidate::response)
                 .toList();
 
     }
+
+    private record RecentCandidate(
+            LocalDateTime createdAt,
+            String voucherNo,
+            RecentTransactionResponse response
+    ) {}
 
     private BigDecimal scaledQuantity(BigDecimal value) {
 

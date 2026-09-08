@@ -40,4 +40,6 @@ public interface GoodsIssueRepository
             IssueStatus status
 
     );
+
+    List<GoodsIssue> findTop10ByOrderByCreatedAtDesc();
 }

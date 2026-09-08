@@ -81,4 +81,6 @@ public interface GoodsReceiptRepository
 
     );
 
+    List<GoodsReceipt> findTop10ByOrderByCreatedAtDesc();
+
 }

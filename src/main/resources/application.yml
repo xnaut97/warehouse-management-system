@@ -11,6 +11,9 @@ spring:
     init:
       mode: always
 
+  jackson:
+    time-zone: Asia/Ho_Chi_Minh
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -20,6 +23,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        jdbc:
+          time_zone: Asia/Ho_Chi_Minh
 
   springdoc:
     swagger-ui:
